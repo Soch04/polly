@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read/write their own user doc
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Users can read/write their own agent doc
+    match /agents/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Users can read all agents (needed for inter-agent hub display)
+    match /agents/{userId} {
+      allow read: if request.auth != null;
+    }
+
+    // Messages: users can read/write messages they sent or received
+    match /messages/{messageId} {
+      allow read: if request.auth != null && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.recipientId == request.auth.uid
+      );
+      allow create: if request.auth != null;
+    }
+
+    // Org data: any authenticated user can submit; only admins can update status
+    match /orgData/{docId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Agent mailbox: authenticated users can read messages sent to them
+    match /agentMailbox/{messageId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

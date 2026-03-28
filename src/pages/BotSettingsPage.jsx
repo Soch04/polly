@@ -1,6 +1,12 @@
 import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 import { useAgent } from '../hooks/useAgent'
-import { RiRobot2Line, RiSaveLine, RiPulseLine, RiCodeSSlashLine, RiLockLine } from 'react-icons/ri'
+import { createAgentDoc } from '../firebase/firestore'
+import { DEPARTMENTS } from '../data/mockData'
+import {
+  RiRobot2Line, RiSaveLine, RiPulseLine, RiCodeSSlashLine,
+  RiLockLine, RiCheckboxCircleLine, RiSparklingLine,
+} from 'react-icons/ri'
 import './BotSettingsPage.css'
 
 const STATUS_OPTIONS = [
@@ -10,16 +16,117 @@ const STATUS_OPTIONS = [
 ]
 
 export default function BotSettingsPage() {
+  const { user, setAgent: setGlobalAgent } = useAuth()
   const { agent, saving, saveInstructions, changeStatus } = useAgent()
   const [instructions, setInstructions] = useState(agent?.systemInstructions ?? '')
   const [isDirty, setIsDirty]           = useState(false)
 
+  // ── Agent initialisation state (shown when agent is null) ──
+  const [initForm,    setInitForm]    = useState({
+    department:         user?.department ?? '',
+    systemInstructions: '',
+  })
+  const [initSaving,  setInitSaving]  = useState(false)
+  const [initError,   setInitError]   = useState(null)
+
+  const handleInit = async (e) => {
+    e.preventDefault()
+    if (!initForm.department) { setInitError('Please select a department.'); return }
+    setInitError(null)
+    setInitSaving(true)
+    try {
+      const instructions = initForm.systemInstructions.trim() ||
+        `You are the AI proxy for ${user.displayName}. Represent them professionally and accurately.`
+      await createAgentDoc(user.uid, {
+        displayName:        user.displayName,
+        department:         initForm.department,
+        systemInstructions: instructions,
+      })
+      // Refresh agent in global context so the whole app reacts
+      setGlobalAgent({
+        userId:             user.uid,
+        displayName:        `${user.displayName}'s Agent`,
+        department:         initForm.department,
+        status:             'active',
+        systemInstructions: instructions,
+        model:              'gemini-2.0-flash',
+        knowledgeScope:     ['global', initForm.department.toLowerCase()],
+      })
+    } catch (err) {
+      setInitError(err.message ?? 'Failed to initialize agent. Please try again.')
+    } finally {
+      setInitSaving(false)
+    }
+  }
+
   if (!agent) {
     return (
-      <div className="empty-state" style={{ height: '60vh' }}>
-        <div className="empty-state-icon">🤖</div>
-        <h3>No agent found</h3>
-        <p>Your agent will be initialized when you complete account setup.</p>
+      <div className="page-content">
+        <div className="bot-page animate-fade-in">
+          <div className="page-header">
+            <h1><RiSparklingLine style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />Initialize Your Agent</h1>
+            <p>Set up your personal AI proxy — it will represent you across the Borg network.</p>
+          </div>
+
+          <div className="agent-init-card card glass">
+            <div className="agent-init-icon"><RiRobot2Line /></div>
+            <h2 className="agent-init-title">Welcome, {user?.displayName?.split(' ')[0] ?? 'there'}!</h2>
+            <p className="agent-init-subtitle">
+              Your agent doesn't exist yet. Fill in the details below to launch it.
+            </p>
+
+            {initError && (
+              <div className="auth-alert auth-alert-error" role="alert">
+                {initError}
+              </div>
+            )}
+
+            <form className="agent-init-form" onSubmit={handleInit}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="init-dept">Department</label>
+                <select
+                  id="init-dept"
+                  className="form-select"
+                  value={initForm.department}
+                  onChange={e => setInitForm(f => ({ ...f, department: e.target.value }))}
+                  required
+                >
+                  <option value="">Select your department...</option>
+                  {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="init-instructions">
+                  Custom Instructions <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span>
+                </label>
+                <textarea
+                  id="init-instructions"
+                  className="form-textarea"
+                  rows={8}
+                  placeholder={`Describe how your agent should represent you.\n\nExamples:\n• Always respond in a formal, executive tone\n• Prioritize tasks related to product launches\n• Never share calendar details without my approval\n• When uncertain, ask me before responding`}
+                  value={initForm.systemInstructions}
+                  onChange={e => setInitForm(f => ({ ...f, systemInstructions: e.target.value }))}
+                />
+                <p className="form-hint">
+                  <RiLockLine style={{ verticalAlign: 'middle' }} /> Private — never shared with other agents.
+                  Leave blank to use the default instructions.
+                </p>
+              </div>
+
+              <button
+                id="btn-init-agent"
+                type="submit"
+                className="btn btn-primary btn-full btn-lg"
+                disabled={initSaving}
+              >
+                {initSaving
+                  ? <><span className="spinner" style={{ width: 18, height: 18 }} />Initializing agent...</>
+                  : <><RiCheckboxCircleLine />Launch My Agent</>}
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     )
   }

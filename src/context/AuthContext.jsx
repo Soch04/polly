@@ -13,25 +13,46 @@ export function AuthProvider({ children }) {
   const [error,   setError]   = useState(null)
 
   useEffect(() => {
-    if (USE_MOCK) return   // Skip Firebase listener in mock mode
+    if (USE_MOCK) return
 
     const unsub = subscribeToAuth(async (firebaseUser) => {
+      if (!firebaseUser) {
+        setUser(null)
+        setAgent(null)
+        setLoading(false)
+        return
+      }
+
       try {
-        if (firebaseUser) {
-          // Load user + agent docs from Firestore
+        // Build a base user from Firebase Auth immediately so the app
+        // never hangs if the Firestore doc isn't written yet (race on signup)
+        const baseUser = {
+          uid:         firebaseUser.uid,
+          email:       firebaseUser.email,
+          displayName: firebaseUser.displayName ?? firebaseUser.email,
+        }
+        setUser(baseUser)
+        setLoading(false)  // unblock the UI immediately
+
+        // Enrich with Firestore profile — retry up to 3x with 800ms gap
+        // to handle the race where setDoc hasn't completed yet after signup
+        let retries = 3
+        while (retries-- > 0) {
           const [userSnap, agentSnap] = await Promise.all([
             getUserDoc(firebaseUser.uid),
             getAgentDoc(firebaseUser.uid),
           ])
-          setUser({ uid: firebaseUser.uid, ...userSnap.data() })
-          setAgent(agentSnap.exists() ? agentSnap.data() : null)
-        } else {
-          setUser(null)
-          setAgent(null)
+          if (userSnap.exists()) {
+            setUser({ ...baseUser, ...userSnap.data() })
+            setAgent(agentSnap.exists() ? agentSnap.data() : null)
+            break
+          }
+          // Doc not ready yet — wait and retry
+          await new Promise(r => setTimeout(r, 800))
         }
       } catch (err) {
+        console.error('[AuthContext]', err)
         setError(err.message)
-      } finally {
         setLoading(false)
       }
     })
@@ -41,7 +62,7 @@ export function AuthProvider({ children }) {
   const isAdmin = user?.role === 'admin'
 
   return (
-    <AuthContext.Provider value={{ user, agent, loading, error, isAdmin, USE_MOCK }}>
+    <AuthContext.Provider value={{ user, agent, setAgent, loading, error, isAdmin, USE_MOCK }}>
       {children}
     </AuthContext.Provider>
   )

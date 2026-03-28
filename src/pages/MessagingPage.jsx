@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMessages } from '../hooks/useMessages'
 import { useConversations } from '../hooks/useConversations'
 import { useAuth } from '../context/AuthContext'
+import { Navigate } from 'react-router-dom'
 import MessageBubble from '../components/messaging/MessageBubble'
 import MessageInput from '../components/messaging/MessageInput'
 import ChatSidebar from '../components/hub/ChatSidebar'
@@ -27,6 +28,9 @@ export default function MessagingPage() {
 
   const [activeTab, setActiveTab] = useState('personal')
   const feedRef = useRef(null)
+
+  // If no agent yet, redirect to the initialization flow
+  if (!agent) return <Navigate to="/bot-settings" replace />
 
   // Auto-scroll in personal chat
   useEffect(() => {

@@ -150,3 +150,33 @@
   margin: 0;
   line-height: 1.4;
 }
+
+/* ── Inline alert ── */
+.auth-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  animation: fadeIn 0.2s ease;
+}
+
+.auth-alert svg {
+  font-size: 1.125rem;
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+}
+
+.auth-alert-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.auth-alert-success {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}

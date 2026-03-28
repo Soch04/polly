@@ -30,6 +30,20 @@ export const updateAgentInstructions = (uid, instructions) =>
 export const updateAgentStatus = (uid, status) =>
   updateDoc(doc(db, 'agents', uid), { status, updatedAt: serverTimestamp() })
 
+export const createAgentDoc = (uid, { displayName, department, systemInstructions }) =>
+  setDoc(doc(db, 'agents', uid), {
+    userId:             uid,
+    displayName:        `${displayName}'s Agent`,
+    department,
+    status:             'active',
+    systemInstructions,
+    model:              'gemini-2.0-flash',
+    knowledgeScope:     ['global', department.toLowerCase()],
+    conversationHistory: [],
+    createdAt:          serverTimestamp(),
+    updatedAt:          serverTimestamp(),
+  })
+
 // ══════════════════════════════════════════════════════════
 // MESSAGES
 // Schema: { id, type: 'user'|'bot-response'|'bot-to-bot',

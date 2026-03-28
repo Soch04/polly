@@ -1,17 +1,39 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { signUp, signIn } from '../firebase/auth'
-import { useApp } from '../context/AppContext'
 import { DEPARTMENTS } from '../data/mockData'
-import { RiHexagonFill, RiEyeLine, RiEyeOffLine } from 'react-icons/ri'
+import { RiHexagonFill, RiEyeLine, RiEyeOffLine, RiCheckboxCircleLine, RiErrorWarningLine } from 'react-icons/ri'
 import './AuthPage.css'
+
+// Map Firebase error codes to human-friendly messages
+function friendlyError(err) {
+  const code = err?.code ?? ''
+  if (code === 'auth/email-already-in-use')   return 'An account with that email already exists. Try signing in instead.'
+  if (code === 'auth/user-not-found')          return 'No account found with that email.'
+  if (code === 'auth/wrong-password')          return 'Incorrect password. Please try again.'
+  if (code === 'auth/invalid-credential')      return 'Incorrect email or password. Please try again.'
+  if (code === 'auth/invalid-email')           return 'Please enter a valid email address.'
+  if (code === 'auth/weak-password')           return 'Password must be at least 6 characters.'
+  if (code === 'auth/operation-not-allowed')   return 'Email/Password sign-in is not enabled yet. Please contact the admin.'
+  if (code === 'auth/too-many-requests')       return 'Too many attempts. Please wait a moment and try again.'
+  if (code === 'auth/network-request-failed')  return 'Network error. Check your connection and try again.'
+  return err?.message ?? 'Something went wrong. Please try again.'
+}
 
 export default function AuthPage() {
   const [tab,      setTab]      = useState('login')    // 'login' | 'signup'
   const [loading,  setLoading]  = useState(false)
   const [showPass, setShowPass] = useState(false)
-  const { addToast } = useApp()
+  const [alert,    setAlert]    = useState(null)   // { type: 'error'|'success', message }
   const navigate = useNavigate()
+
+  const showAlert = (message, type = 'error') => {
+    setAlert({ message, type })
+    if (type === 'success') setTimeout(() => setAlert(null), 4000)
+  }
+
+  // Clear alert when switching tabs
+  const switchTab = (t) => { setTab(t); setAlert(null) }
 
   // Login form
   const [loginForm, setLoginForm] = useState({ email: '', password: '' })
@@ -26,12 +48,13 @@ export default function AuthPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault()
+    setAlert(null)
     setLoading(true)
     try {
       await signIn(loginForm)
       navigate('/messaging')
     } catch (err) {
-      addToast(err.message || 'Login failed', 'error')
+      showAlert(friendlyError(err))
     } finally {
       setLoading(false)
     }
@@ -39,17 +62,18 @@ export default function AuthPage() {
 
   const handleSignUp = async (e) => {
     e.preventDefault()
+    setAlert(null)
     if (!signupForm.department) {
-      addToast('Please select a department', 'error')
+      showAlert('Please select a department.')
       return
     }
     setLoading(true)
     try {
       await signUp(signupForm)
-      addToast('Account created! Welcome to Borg.', 'success')
+      // Navigate immediately — AuthContext will resolve user from Firebase Auth
       navigate('/messaging')
     } catch (err) {
-      addToast(err.message || 'Sign up failed', 'error')
+      showAlert(friendlyError(err))
     } finally {
       setLoading(false)
     }
@@ -88,14 +112,22 @@ export default function AuthPage() {
           <button
             id="auth-tab-login"
             className={`tab-item ${tab === 'login' ? 'active' : ''}`}
-            onClick={() => setTab('login')}
+            onClick={() => switchTab('login')}
           >Sign In</button>
           <button
             id="auth-tab-signup"
             className={`tab-item ${tab === 'signup' ? 'active' : ''}`}
-            onClick={() => setTab('signup')}
+            onClick={() => switchTab('signup')}
           >Create Account</button>
         </div>
+
+        {/* Inline alert */}
+        {alert && (
+          <div className={`auth-alert auth-alert-${alert.type}`} role="alert">
+            {alert.type === 'success' ? <RiCheckboxCircleLine /> : <RiErrorWarningLine />}
+            {alert.message}
+          </div>
+        )}
 
         {/* ── Login Form ── */}
         {tab === 'login' && (
