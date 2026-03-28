@@ -1,0 +1,227 @@
+.agent-msg {
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  animation: fadeIn 0.25s ease forwards;
+  padding: 0.25rem 0;
+}
+
+.agent-msg-mine .agent-msg-avatar {
+  background: linear-gradient(135deg, #5e9ef0, #8b5cf6);
+  color: #fff;
+}
+
+.agent-msg-other .agent-msg-avatar {
+  background: var(--color-surface-3);
+  color: var(--text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.agent-msg-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.agent-msg-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* ── Meta header ── */
+.agent-msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.agent-name {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.agent-name-mine {
+  color: var(--color-accent);
+}
+
+.agent-name-receiver {
+  color: var(--color-bot);
+}
+
+.meta-arrow {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.meta-separator {
+  color: var(--color-border);
+}
+
+.meta-context {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--color-accent-2);
+  border-radius: 4px;
+  padding: 0.0625rem 0.3125rem;
+}
+
+.meta-time {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.meta-protocol-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(94, 158, 240, 0.08);
+  color: var(--color-accent);
+  border: 1px solid rgba(94, 158, 240, 0.15);
+  border-radius: 4px;
+  padding: 0.0625rem 0.3125rem;
+}
+
+.meta-streaming-tag {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-success);
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: 4px;
+  padding: 0.0625rem 0.3125rem;
+  animation: pulse-live 1.5s ease-in-out infinite;
+}
+
+/* ── Message text bubble ── */
+.agent-msg-text {
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 0 10px 10px 10px;
+  padding: 0.625rem 0.875rem;
+  word-break: break-word;
+  transition: border-color var(--transition-fast);
+}
+
+.agent-msg-mine .agent-msg-text {
+  border-color: rgba(94, 158, 240, 0.15);
+  background: rgba(94, 158, 240, 0.04);
+}
+
+.streaming-text {
+  border-color: rgba(16, 185, 129, 0.2) !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+}
+
+.streaming-cursor {
+  display: inline-block;
+  color: var(--color-success);
+  animation: typing-blink 0.8s step-end infinite;
+  margin-left: 1px;
+}
+
+/* ── Protocol message ── */
+.agent-msg-protocol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.protocol-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem 0.625rem;
+  background: rgba(94, 158, 240, 0.06);
+  border: 1px solid rgba(94, 158, 240, 0.15);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all var(--transition-fast);
+  width: fit-content;
+}
+
+.protocol-toggle:hover {
+  background: rgba(94, 158, 240, 0.1);
+  border-color: rgba(94, 158, 240, 0.3);
+}
+
+.protocol-json {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: #a8d8ff;
+  background: var(--color-surface-2);
+  border: 1px solid rgba(94, 158, 240, 0.12);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.7;
+  animation: fadeIn 0.2s ease;
+}
+
+.protocol-summary {
+  display: flex;
+  gap: 0.375rem;
+  align-items: flex-start;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  line-height: 1.5;
+}
+
+.protocol-summary-label {
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+/* ── Stream / last message glow ── */
+.agent-msg-streaming .agent-msg-text,
+.agent-msg-streaming .protocol-toggle {
+  animation: stream-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes stream-glow {
+  0%, 100% { box-shadow: none; }
+  50%       { box-shadow: 0 0 12px rgba(16, 185, 129, 0.15); }
+}
+
+.agent-msg-last .agent-msg-text {
+  border-color: rgba(94, 158, 240, 0.2);
+}
