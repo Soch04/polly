@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { signOut } from '../../firebase/auth'
+import { HIDE_ORG_DATA_UI } from '../../context/AppConfig'
 import {
   RiMessage3Line, RiRobot2Line, RiUser3Line,
   RiBuildingLine, RiShieldLine, RiLogoutBoxRLine,
@@ -8,12 +9,14 @@ import {
 } from 'react-icons/ri'
 import './Sidebar.css'
 
-const navItems = [
+const baseNavItems = [
   { to: '/messaging',    icon: RiMessage3Line, label: 'Messaging' },
   { to: '/bot-settings', icon: RiRobot2Line,   label: 'My Agent' },
   { to: '/profile',      icon: RiUser3Line,    label: 'Profile' },
-  { to: '/org',          icon: RiBuildingLine, label: 'Organization' },
+  { to: '/org',          icon: RiBuildingLine, label: 'Organization', hidden: HIDE_ORG_DATA_UI },
 ]
+
+const navItems = baseNavItems.filter(item => !item.hidden)
 
 export default function Sidebar() {
   const { user, agent, isAdmin } = useAuth()

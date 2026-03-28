@@ -2,12 +2,9 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { subscribeToAuth } from '../firebase/auth'
 import { getAgentDoc, getUserDoc } from '../firebase/firestore'
 import { MOCK_USER, MOCK_AGENT } from '../data/mockData'
+import { USE_MOCK } from './AppConfig'
 
 const AuthContext = createContext(null)
-
-// Set to true to bypass Firebase and use mock data
-// Flip to false once you have Firebase keys in .env
-const USE_MOCK = true
 
 export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(USE_MOCK ? MOCK_USER  : null)

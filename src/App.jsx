@@ -12,6 +12,22 @@ import OrgPage         from './pages/OrgPage'
 import AdminDashboard  from './pages/AdminDashboard'
 
 /**
+ * Guard that requires authentication.
+ * In mock mode (VITE_USE_MOCK=true) → always passes through.
+ * In live mode → redirects to /auth if no user.
+ */
+function AuthRoute({ children }) {
+  const { user, loading, USE_MOCK } = useAuth()
+  if (loading) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'var(--color-bg)' }}>
+      <div className="spinner" />
+    </div>
+  )
+  if (!USE_MOCK && !user) return <Navigate to="/auth" replace />
+  return children
+}
+
+/**
  * Guard that requires the user to be an admin.
  * Redirects non-admins to /messaging.
  */
@@ -31,35 +47,36 @@ function AppRoutes() {
         {/* Auth — no sidebar */}
         <Route path="/auth" element={<AuthPage />} />
 
-        {/* Authenticated layout */}
-        <Route
-          path="/"
-          element={<Layout><></></Layout>}
-        />
+        {/* Root redirect */}
+        <Route path="/" element={<Navigate to="/messaging" replace />} />
+
+        {/* Authenticated routes */}
         <Route
           path="/messaging"
-          element={<Layout><MessagingPage /></Layout>}
+          element={<AuthRoute><Layout><MessagingPage /></Layout></AuthRoute>}
         />
         <Route
           path="/profile"
-          element={<Layout><ProfilePage /></Layout>}
+          element={<AuthRoute><Layout><ProfilePage /></Layout></AuthRoute>}
         />
         <Route
           path="/bot-settings"
-          element={<Layout><BotSettingsPage /></Layout>}
+          element={<AuthRoute><Layout><BotSettingsPage /></Layout></AuthRoute>}
         />
         <Route
           path="/org"
-          element={<Layout><OrgPage /></Layout>}
+          element={<AuthRoute><Layout><OrgPage /></Layout></AuthRoute>}
         />
 
         {/* Protected admin route */}
         <Route
           path="/admin"
           element={
-            <AdminRoute>
-              <Layout><AdminDashboard /></Layout>
-            </AdminRoute>
+            <AuthRoute>
+              <AdminRoute>
+                <Layout><AdminDashboard /></Layout>
+              </AdminRoute>
+            </AuthRoute>
           }
         />
 
