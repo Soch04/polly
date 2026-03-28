@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { AppProvider } from './context/AppContext'
+import { EscalationProvider } from './context/EscalationContext'
 import Layout from './components/layout/Layout'
 
 // Pages
@@ -96,7 +97,9 @@ export default function App() {
   return (
     <AppProvider>
       <AuthProvider>
-        <AppRoutes />
+        <EscalationProvider>
+          <AppRoutes />
+        </EscalationProvider>
       </AuthProvider>
     </AppProvider>
   )

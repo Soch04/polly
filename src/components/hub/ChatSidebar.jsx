@@ -150,11 +150,14 @@ function ConvItem({ conv, isSelected, isActive, unread, onSelect }) {
 
 function formatRelativeTime(date) {
   if (!date) return ''
-  const diff = Date.now() - new Date(date).getTime()
+  // Handle Firestore Timestamp objects
+  const d = date?.toDate?.() ?? (date instanceof Date ? date : new Date(date))
+  if (isNaN(d.getTime())) return ''
+  const diff  = Date.now() - d.getTime()
   const mins  = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)
-  if (mins < 1)   return 'now'
-  if (mins < 60)  return `${mins}m`
+  if (mins  < 1)  return 'now'
+  if (mins  < 60) return `${mins}m`
   if (hours < 24) return `${hours}h`
   return `${Math.floor(hours / 24)}d`
 }

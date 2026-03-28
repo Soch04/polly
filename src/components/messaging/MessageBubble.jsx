@@ -1,4 +1,4 @@
-import { RiRobot2Line, RiUser3Line, RiArrowLeftRightLine } from 'react-icons/ri'
+import { RiRobot2Line, RiUser3Line, RiArrowLeftRightLine, RiSignalWifiLine } from 'react-icons/ri'
 import './MessageBubble.css'
 
 /**
@@ -14,6 +14,16 @@ export default function MessageBubble({ message }) {
         minute: '2-digit',
       })
     : ''
+
+  // ── System dispatch status messages ──
+  if (type === 'system') {
+    return (
+      <div className="msg-system animate-fade-in">
+        <RiSignalWifiLine className="msg-system-icon" />
+        <span className="msg-system-text">{formatContent(content)}</span>
+      </div>
+    )
+  }
 
   if (type === 'bot-to-bot') {
     return (

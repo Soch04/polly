@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMessages } from '../hooks/useMessages'
 import { useConversations } from '../hooks/useConversations'
+import { useAgentInbox } from '../hooks/useAgentInbox'
 import { useAuth } from '../context/AuthContext'
+import { useEscalation } from '../context/EscalationContext'
 import { Navigate } from 'react-router-dom'
 import MessageBubble from '../components/messaging/MessageBubble'
 import MessageInput from '../components/messaging/MessageInput'
+import EscalationBanner from '../components/messaging/EscalationBanner'
 import ChatSidebar from '../components/hub/ChatSidebar'
 import ChatThread from '../components/hub/ChatThread'
-import { RiRobot2Line, RiSignalWifiLine, RiMessage3Line } from 'react-icons/ri'
+import { RiRobot2Line, RiSignalWifiLine, RiMessage3Line, RiAlertLine } from 'react-icons/ri'
 import './MessagingPage.css'
 
 const TABS = [
@@ -17,6 +20,7 @@ const TABS = [
 
 export default function MessagingPage() {
   const { agent } = useAuth()
+  const { escalation, clearEscalation } = useEscalation()
   const { messages, isTyping, isSending, sendMessage } = useMessages()
   const {
     directConvs, groupConvs,
@@ -26,23 +30,35 @@ export default function MessagingPage() {
     streamingMsgId,
   } = useConversations()
 
+  // Activate inbox listener for this user
+  useAgentInbox()
+
   const [activeTab, setActiveTab] = useState('personal')
   const feedRef = useRef(null)
 
-  // If no agent yet, redirect to the initialization flow
-  if (!agent) return <Navigate to="/bot-settings" replace />
+  // ── When escalation arrives → switch to personal tab ─────────
+  useEffect(() => {
+    if (escalation) {
+      setActiveTab('personal')
+    }
+  }, [escalation])
 
-  // Auto-scroll in personal chat
+  // ── Auto-scroll personal chat ─────────────────────────────────
   useEffect(() => {
     if (activeTab !== 'personal') return
     const el = feedRef.current
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-  }, [messages, isTyping, activeTab])
+  }, [messages, isTyping, activeTab, escalation])
+
+  // If no agent yet, redirect to initialization
+  if (!agent) return <Navigate to="/bot-settings" replace />
+
+  const hasEscalation = !!escalation
 
   return (
     <div className="msg-page">
 
-      {/* ── Page header ─────────────────────────────────────── */}
+      {/* ── Page header ──────────────────────────────────────── */}
       <div className="msg-page-header">
         <div>
           <h1>
@@ -66,7 +82,13 @@ export default function MessagingPage() {
             >
               <Icon style={{ marginRight: '0.375rem', verticalAlign: 'middle' }} />
               {label}
-              {/* Hub unread badge on the tab */}
+              {/* Escalation badge on My Agent tab */}
+              {id === 'personal' && hasEscalation && (
+                <span className="tab-escalation-badge" title="Your agent needs your input">
+                  <RiAlertLine />
+                </span>
+              )}
+              {/* Unread badge on Agent Hub tab */}
               {id === 'hub' && totalUnread > 0 && (
                 <span className="tab-unread-badge">
                   {totalUnread > 9 ? '9+' : totalUnread}
@@ -77,10 +99,10 @@ export default function MessagingPage() {
         </div>
       </div>
 
-      {/* ── Content area ────────────────────────────────────── */}
+      {/* ── Content area ─────────────────────────────────────── */}
       {activeTab === 'personal' ? (
 
-        /* ─ Personal chat (original) ─ */
+        /* ─ Personal chat ─ */
         <div className="msg-feed-wrapper">
           {/* Feed header */}
           <div className="msg-feed-header">
@@ -90,7 +112,7 @@ export default function MessagingPage() {
               </div>
               <div>
                 <div className="feed-agent-name">{agent?.displayName ?? 'Your Agent'}</div>
-                <div className="feed-agent-model">{agent?.model ?? 'gemini-2.0-flash'} · RAG enabled</div>
+                <div className="feed-agent-model">{agent?.model ?? 'gemini-2.5-flash-lite'} · RAG enabled</div>
               </div>
             </div>
             <span className={`badge badge-${agent?.status ?? 'offline'}`}>
@@ -99,9 +121,17 @@ export default function MessagingPage() {
             </span>
           </div>
 
+          {/* Escalation banner — shown above the message feed when human input needed */}
+          {hasEscalation && (
+            <EscalationBanner
+              escalation={escalation}
+              onDismiss={clearEscalation}
+            />
+          )}
+
           {/* Messages */}
           <div className="msg-feed" ref={feedRef} role="log" aria-live="polite" aria-label="Message feed">
-            {messages.length === 0 && (
+            {messages.length === 0 && !hasEscalation && (
               <div className="empty-state">
                 <div className="empty-state-icon">💬</div>
                 <h3>Start a conversation</h3>
@@ -130,7 +160,11 @@ export default function MessagingPage() {
             )}
           </div>
 
-          <MessageInput onSend={sendMessage} disabled={isTyping || isSending} />
+          <MessageInput
+            onSend={sendMessage}
+            disabled={isTyping || isSending}
+            escalation={escalation}
+          />
         </div>
 
       ) : (

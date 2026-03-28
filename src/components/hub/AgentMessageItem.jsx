@@ -38,9 +38,13 @@ export default function AgentMessageItem({ message, isStreaming, isLast }) {
     return () => clearInterval(interval)
   }, [isStreaming, content])
 
-  const timeStr = timestamp
-    ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : '—'
+  // Handle Firestore Timestamp objects, plain Dates, and ISO strings
+  const timeStr = (() => {
+    if (!timestamp) return '—'
+    const d = timestamp?.toDate?.() ?? (timestamp instanceof Date ? timestamp : new Date(timestamp))
+    if (isNaN(d.getTime())) return '—'
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  })()
 
   // Try to pretty-print JSON protocol messages
   let parsedJson = null

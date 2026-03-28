@@ -4,6 +4,109 @@ import {
 } from 'firebase/firestore'
 import { db } from './config'
 
+// ════════════════════════════════════════════════════════
+// CONVERSATIONS
+// Schema: { id, participantIds[], participantNames[], initiatorId,
+//           contextType, department, lastMessage, lastActivity,
+//           isActive, type: 'direct'|'group', createdAt }
+// ════════════════════════════════════════════════════════
+
+/**
+ * Upsert a direct conversation between two agents.
+ * Uses a deterministic ID (sorted UIDs joined) so the same pair
+ * never creates duplicate threads.
+ * Returns the conversation ID.
+ */
+export const upsertConversation = async ({
+  participantIds, participantNames, initiatorId,
+  contextType, department, lastMessage, lastActivity, isActive,
+}) => {
+  const sortedIds = [...participantIds].sort()
+  const convId    = sortedIds.join('__')
+  const convRef   = doc(db, 'conversations', convId)
+
+  // setDoc with merge: true acts as an upsert — creates if missing, updates fields if exists.
+  // Avoids a getDoc call that would fail when the doc doesn't exist yet.
+  await setDoc(convRef, {
+    participantIds,
+    participantNames,
+    initiatorId,
+    type:         participantIds.length > 2 ? 'group' : 'direct',
+    contextType:  contextType ?? 'General Coordination',
+    department:   department ?? 'General',
+    lastMessage:  lastMessage ?? '',
+    // Use the passed-in Date (plain JS Date, not serverTimestamp)
+    // so the value is immediately available in local cache without a pending state.
+    lastActivity: lastActivity instanceof Date ? lastActivity : serverTimestamp(),
+    isActive:     isActive ?? true,
+    updatedAt:    serverTimestamp(),
+    createdAt:    serverTimestamp(),
+  }, { merge: true })
+
+  return convId
+}
+
+/** Set a conversation's isActive flag (used to stop the processing indicator) */
+export const setConversationActive = (convId, active) =>
+  updateDoc(doc(db, 'conversations', convId), {
+    isActive:  active,
+    updatedAt: serverTimestamp(),
+  })
+
+/**
+ * Real-time listener for all conversations involving a user.
+ */
+export const subscribeToConversations = (userId, callback) => {
+  // No orderBy — avoids composite index requirement.
+  // Sort client-side after fetch.
+  const q = query(
+    collection(db, 'conversations'),
+    where('participantIds', 'array-contains', userId),
+    limit(50),
+  )
+  return onSnapshot(
+    q,
+    snap => {
+      const convs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const aMs = a.lastActivity?.toMillis?.() ?? 0
+          const bMs = b.lastActivity?.toMillis?.() ?? 0
+          return bMs - aMs
+        })
+      console.log('[subscribeToConversations] received', convs.length, 'conversations')
+      callback(convs)
+    },
+    err => console.error('[subscribeToConversations] snapshot error:', err.code, err.message)
+  )
+}
+
+/**
+ * Real-time listener for messages in a specific conversation thread.
+ */
+export const subscribeToConvMessages = (convId, callback) => {
+  // No orderBy on a different field — avoids composite index requirement.
+  const q = query(
+    collection(db, 'messages'),
+    where('convId', '==', convId),
+    limit(100),
+  )
+  return onSnapshot(
+    q,
+    snap => {
+      const msgs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const aMs = a.timestamp?.toMillis?.() ?? 0
+          const bMs = b.timestamp?.toMillis?.() ?? 0
+          return aMs - bMs
+        })
+      callback(msgs)
+    },
+    err => console.error('[subscribeToConvMessages] snapshot error:', err.code, err.message)
+  )
+}
+
 // ══════════════════════════════════════════════════════════
 // USERS
 // ══════════════════════════════════════════════════════════
@@ -13,6 +116,15 @@ export const getUserDoc = (uid) =>
 
 export const updateUserDoc = (uid, data) =>
   updateDoc(doc(db, 'users', uid), { ...data, updatedAt: serverTimestamp() })
+
+/**
+ * Fetch all users for the org directory (used by @mention autocomplete).
+ * Returns an array of plain objects: { uid, displayName, email, department }
+ */
+export const getOrgDirectory = async () => {
+  const snap = await getDocs(collection(db, 'users'))
+  return snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+}
 
 // ══════════════════════════════════════════════════════════
 // AGENTS
@@ -85,8 +197,9 @@ export const sendBotMessage = (userId, content, agentName) =>
 
 /**
  * Log a bot-to-bot message (inter-agent communication)
+ * convId ties it to a conversation thread.
  */
-export const logBotToBotMessage = (fromId, toId, fromName, toName, content, dept) =>
+export const logBotToBotMessage = (fromId, toId, fromName, toName, content, dept, convId) =>
   addDoc(collection(db, 'messages'), {
     type:          'bot-to-bot',
     senderId:      fromId,
@@ -97,6 +210,7 @@ export const logBotToBotMessage = (fromId, toId, fromName, toName, content, dept
     recipientType: 'agent',
     content,
     department:    dept,
+    convId:        convId ?? null,
     timestamp:     serverTimestamp(),
     metadata:      { protocol: 'borg-agent-handshake-v1' },
   })

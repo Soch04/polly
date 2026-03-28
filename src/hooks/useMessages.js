@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useEscalation } from '../context/EscalationContext'
 import { USE_MOCK, ENABLE_INTERNAL_MONOLOGUE } from '../context/AppConfig'
 import { MOCK_MESSAGES } from '../data/mockData'
-import { sendUserMessage, sendBotMessage, subscribeToUserMessages } from '../firebase/firestore'
+import { sendUserMessage, sendBotMessage, subscribeToUserMessages, logBotToBotMessage, setConversationActive } from '../firebase/firestore'
 import { callGemini } from '../agent/gemini'
+import { dispatchAgentMessages } from '../agent/agentDispatcher'
+import { sanitizeAgentOutput } from '../agent/sanitize'
 import {
   buildSystemPrompt,
   buildMonologuePrompt,
@@ -13,11 +16,11 @@ import {
 } from '../agent/buildPrompt'
 
 export function useMessages() {
-  const { user, agent } = useAuth()
+  const { user, agent }                  = useAuth()
+  const { escalation, clearEscalation }  = useEscalation()
   const [messages,   setMessages]   = useState([])
   const [isTyping,   setIsTyping]   = useState(false)
   const [isSending,  setIsSending]  = useState(false)
-  // historyRef stores recent turns for conversation context (not persisted to Firestore)
   const historyRef = useRef([])
 
   // ── Load messages ──────────────────────────────────────────
@@ -40,17 +43,21 @@ export function useMessages() {
   }, [user?.uid])
 
   // ── Send a message & get agent response ────────────────────
-  const sendMessage = async (content) => {
+  // mentions: Array<{ uid, displayName, email, department }>
+  const sendMessage = async (content, mentions = []) => {
     if (!content.trim() || isSending) return
     setIsSending(true)
 
     const userMsg = {
-      id:         `tmp-${Date.now()}`,
-      type:       'user',
-      senderName:  user?.displayName ?? 'You',
-      senderType: 'human',
-      content:    content.trim(),
-      timestamp:  new Date(),
+      id:                `tmp-${Date.now()}`,
+      type:              'user',
+      senderName:         user?.displayName ?? 'You',
+      senderType:        'human',
+      content:           content.trim(),
+      // Updated message schema — target_user_emails carries mention routing data
+      target_user_emails: mentions.map(m => m.email),
+      mentions,
+      timestamp:         new Date(),
     }
 
     setMessages(prev => [...prev, userMsg])
@@ -62,9 +69,33 @@ export function useMessages() {
       await sendUserMessage(user.uid, content, user.displayName).catch(console.error)
     }
 
+    // ── Loop Closure: relay user's answer back to B2B thread ──
+    // If there's an active escalation, the user's message IS the answer.
+    // Relay it to the requester's agent before processing the personal response.
+    const activeEscalation = escalation
+    if (!USE_MOCK && activeEscalation?.convId) {
+      const myAgentName = agent?.displayName ?? `${user.displayName}'s Agent`
+      const relayContent = sanitizeAgentOutput(
+        `${myAgentName} relaying answer from ${user.displayName}: ${content.trim()}`
+      )
+      logBotToBotMessage(
+        user.uid,
+        activeEscalation.incomingMsg.senderId,
+        myAgentName,
+        activeEscalation.senderAgentName,
+        relayContent,
+        agent?.department ?? 'General',
+        activeEscalation.convId,
+      ).then(() => {
+        setConversationActive(activeEscalation.convId, false).catch(() => {})
+        console.log('[useMessages] Escalation relay sent ✅')
+      }).catch(err => console.error('[useMessages] Relay failed:', err.message))
+      clearEscalation()
+    }
+
     try {
       // ── Build prompt ──────────────────────────────────────
-      const systemPrompt = buildSystemPrompt(user, agent)
+      const systemPrompt = buildSystemPrompt(user, agent, '', mentions)
       const complex      = isComplexRequest(content)
       const fullPrompt   = (complex && ENABLE_INTERNAL_MONOLOGUE)
         ? systemPrompt + '\n\n' + buildMonologuePrompt()
@@ -125,11 +156,62 @@ export function useMessages() {
         ...historyRef.current,
         { role: 'user',      content },
         { role: 'assistant', content: parsed.finalAnswer },
-      ].slice(-20) // keep last 20 turns
+      ].slice(-20)
 
       // Persist bot response to Firestore (if not mock)
       if (!USE_MOCK) {
         await sendBotMessage(user.uid, parsed.finalAnswer, agent?.displayName).catch(console.error)
+      }
+
+      // Fire-and-forget B2B dispatch if @mentions present
+      if (mentions.length > 0) {
+        const names = mentions.map(m => m.displayName).join(', ')
+        const dispatchId = `dispatch-${Date.now()}`
+
+        // Immediately show a "dispatching…" system message
+        const dispatchingMsg = {
+          id:         dispatchId,
+          type:       'system',
+          senderType: 'system',
+          content:    `📡 Initiating agent-to-agent contact with **${names}'s Agent**…`,
+          timestamp:  new Date(),
+        }
+        setMessages(prev => [...prev, dispatchingMsg])
+
+        if (!USE_MOCK) {
+          dispatchAgentMessages({ user, agent, userMessage: content, mentions })
+            .then(() => {
+              // Replace dispatching msg with success confirmation
+              setMessages(prev => prev.map(m =>
+                m.id === dispatchId
+                  ? {
+                      ...m,
+                      content: `✅ Message sent to **${names}'s Agent** — open **Agent Hub** to monitor the conversation.`,
+                    }
+                  : m
+              ))
+            })
+            .catch(err => {
+              console.error('[B2B Dispatch]', err)
+              setMessages(prev => prev.map(m =>
+                m.id === dispatchId
+                  ? {
+                      ...m,
+                      content: `⚠️ Could not reach **${names}'s Agent**: ${err.message ?? 'Unknown error'}`,
+                    }
+                  : m
+              ))
+            })
+        } else {
+          // Mock mode — just show success after a brief delay
+          setTimeout(() => {
+            setMessages(prev => prev.map(m =>
+              m.id === dispatchId
+                ? { ...m, content: `✅ Message sent to **${names}'s Agent** — open **Agent Hub** to monitor the conversation.` }
+                : m
+            ))
+          }, 1200)
+        }
       }
 
     } catch (err) {

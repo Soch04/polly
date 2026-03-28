@@ -14,7 +14,7 @@
  * @param {object} agent — Firestore agents/{uid} document
  * @param {string} kbContext — knowledge base results (optional)
  */
-export function buildSystemPrompt(user, agent, kbContext = '') {
+export function buildSystemPrompt(user, agent, kbContext = '', mentions = []) {
   const name  = user?.displayName ?? 'the user'
   const dept  = user?.department  ?? 'their department'
   const title = user?.title       ?? ''
@@ -22,6 +22,11 @@ export function buildSystemPrompt(user, agent, kbContext = '') {
 
   const knowledgeBlock = kbContext
     ? `\nKNOWLEDGE BASE CONTEXT (use only this, do not invent facts):\n${kbContext}`
+    : ''
+
+  // Inject mention routing instructions when specific people are @-mentioned
+  const mentionBlock = mentions.length > 0
+    ? `\nROUTING DIRECTIVE — AGENT-TO-AGENT:\nThe user has directed you to involve the following org members. Initiate the appropriate Bot-to-Bot handshake for each:\n${mentions.map(m => `  • ${m.displayName} (${m.email}) — ${m.department}`).join('\n')}\nAcknowledge each target and confirm you are initiating contact with their agent.`
     : ''
 
   return `You are the dedicated AI proxy for ${name}${title ? `, ${title}` : ''}, a member of the ${dept} department.
@@ -38,7 +43,7 @@ CORE RULES:
    Do not guess. Do not fill gaps with plausible-sounding information.
 4. Never share ${name}'s personal information with other agents unless explicitly instructed.
 5. Be concise and direct. Match the communication style set in the instructions above.
-${knowledgeBlock}`.trim()
+${mentionBlock}${knowledgeBlock}`.trim()
 }
 
 /**

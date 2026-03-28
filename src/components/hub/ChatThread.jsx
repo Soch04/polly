@@ -102,14 +102,22 @@ export default function ChatThread({ conv, messages, isActive, streamingMsgId })
             <p>Agent-to-agent messages will stream here in real time.</p>
           </div>
         ) : (
-          messages.map((msg, i) => (
-            <AgentMessageItem
-              key={msg.id}
-              message={msg}
-              isStreaming={msg.id === streamingMsgId}
-              isLast={i === messages.length - 1}
-            />
-          ))
+          messages.map((msg, i) => {
+            // Normalize Firestore B2B schema to what AgentMessageItem expects
+            const normalized = {
+              ...msg,
+              receiverName: msg.receiverName ?? msg.recipientName ?? 'Unknown Agent',
+              contextType:  msg.contextType  ?? msg.department   ?? 'General',
+            }
+            return (
+              <AgentMessageItem
+                key={msg.id}
+                message={normalized}
+                isStreaming={msg.id === streamingMsgId}
+                isLast={i === messages.length - 1}
+              />
+            )
+          })
         )}
 
         {/* Active processing indicator */}
