@@ -66,7 +66,7 @@ function AppRoutes() {
         />
         <Route
           path="/user-input"
-          element={<Layout><UserInputPage /></Layout>}
+          element={<AuthRoute><Layout><UserInputPage /></Layout></AuthRoute>}
         />
         <Route
           path="/org"
