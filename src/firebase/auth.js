@@ -41,7 +41,7 @@ export async function signUp({ email, password, displayName, department, role = 
     status:     'active',   // 'active' | 'idle' | 'offline'
     // Default system instructions — customizable later
     systemInstructions: buildDefaultInstructions(displayName, department),
-    model:      'gemini-2.0-flash',
+    model:      'gemini-2.5-flash-lite',
     // RAG context scopes this agent is allowed to query
     knowledgeScope: ['global', department.toLowerCase()],
     // Memory — populated over time
