@@ -7,17 +7,64 @@
  */
 
 /**
- * Build the system prompt from the user + agent profile.
- * This is prepended to every Gemini call.
+ * Deduplicate + format RAG results into a structured knowledge block for the system prompt.
+ * Pinecone can return multiple chunks from the same document (chunk overlap). This
+ * function deduplicates by docId, keeps the highest-scoring chunk per document,
+ * and formats them with a confidence indicator.
  *
- * @param {object} user  — Firestore users/{uid} document
- * @param {object} agent — Firestore agents/{uid} document
- * @param {string} kbContext — knowledge base results (optional)
+ * @param {Array} ragResults - [{ text, title, docId, score }] from queryKnowledgeBase()
+ * @returns {{ block: string, citations: Array }} - formatted prompt block + citation index
+ */
+export function buildCitationBlock(ragResults = []) {
+  if (!ragResults || ragResults.length === 0) return { block: '', citations: [] }
+
+  // Deduplicate: keep highest-scoring chunk per unique docId
+  const byDoc = new Map()
+  for (const result of ragResults) {
+    const existing = byDoc.get(result.docId)
+    if (!existing || result.score > existing.score) {
+      byDoc.set(result.docId, result)
+    }
+  }
+
+  const deduped = Array.from(byDoc.values())
+    .sort((a, b) => b.score - a.score)  // highest relevance first
+
+  // Format confidence label from cosine similarity score
+  const confidenceLabel = (score) => {
+    if (score >= 0.85) return 'HIGH'
+    if (score >= 0.70) return 'MEDIUM'
+    return 'LOW'
+  }
+
+  const citations = deduped.map((r, i) => ({ index: i + 1, id: r.docId, title: r.title }))
+
+  const block = [
+    'KNOWLEDGE BASE CONTEXT (ground your response in these documents; cite by [N]):',
+    ...deduped.map((r, i) =>
+      `[${i + 1}] "${r.title}" (relevance: ${confidenceLabel(r.score)})\n${r.text}`
+    ),
+    '',
+    'CITATION RULE: When referencing a document, use [N] notation matching the index above.',
+    'If none of these documents answer the question, output [ESCALATE: <topic>] — do not guess.',
+  ].join('\n\n')
+
+  return { block, citations }
+}
+
+/**
+ * Build the system prompt from the user + agent profile.
+ * Prepended to every Gemini call to ground the agent's identity and context.
+ *
+ * @param {object} user       — Firestore users/{uid} document
+ * @param {object} agent      — Firestore agents/{uid} document
+ * @param {string} kbContext  — pre-formatted knowledge block from buildCitationBlock() or raw string
+ * @param {Array}  directory  — org member directory from getOrgDirectory()
  */
 export function buildSystemPrompt(user, agent, kbContext = '', directory = []) {
-  const name  = user?.displayName ?? 'the user'
-  const dept  = user?.department  ?? 'their department'
-  const title = user?.title       ?? ''
+  const name         = user?.displayName ?? 'the user'
+  const dept         = user?.department  ?? 'their department'
+  const title        = user?.title       ?? ''
   const instructions = agent?.systemInstructions ?? ''
 
   const knowledgeBlock = kbContext
