@@ -32,23 +32,8 @@ export default function DataUploader({ title, description, orgId, ownerEmail, on
         });
         const data = await res.json();
         
-        if (data.queued) {
-          // SYNC WITH FIRESTORE
-          await setDoc(doc(db, 'ingestion_queue', data.req_id), {
-             req_id: data.req_id,
-             org_id: orgId,
-             owner: ownerEmail,
-             title: data.title,
-             type: data.type,
-             preview: data.preview,
-             timestamp: serverTimestamp()
-          });
-          addToast('Upload queued for Admin approval.', 'info');
-          if (onSuccess) onSuccess('text', textContent, true, data.req_id);
-        } else {
-          addToast('Text successfully vectorized!', 'success');
-          if (onSuccess) onSuccess('text', textContent, false);
-        }
+        addToast('Text successfully vectorized!', 'success');
+        if (onSuccess) onSuccess('text', textContent, false);
         setTextContent('');
       } else {
         const formData = new FormData();
@@ -63,23 +48,8 @@ export default function DataUploader({ title, description, orgId, ownerEmail, on
         });
         const data = await res.json();
         
-        if (data.queued) {
-          // SYNC WITH FIRESTORE
-          await setDoc(doc(db, 'ingestion_queue', data.req_id), {
-             req_id: data.req_id,
-             org_id: orgId,
-             owner: ownerEmail,
-             title: data.title,
-             type: data.type,
-             preview: data.preview,
-             timestamp: serverTimestamp()
-          });
-          addToast('Files queued for Admin approval.', 'info');
-          if (onSuccess) onSuccess('documents', Array.from(files).map(f => f.name).join(', '), true, data.req_id);
-        } else {
-          addToast('Documents successfully vectorized!', 'success');
-          if (onSuccess) onSuccess('documents', Array.from(files).map(f => f.name).join(', '), false);
-        }
+        addToast('Documents successfully vectorized!', 'success');
+        if (onSuccess) onSuccess('documents', Array.from(files).map(f => f.name).join(', '), false);
         setFiles([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
@@ -138,7 +108,7 @@ export default function DataUploader({ title, description, orgId, ownerEmail, on
         <button type="submit" className="btn btn-primary" disabled={uploading || (!textMode && files.length === 0) || (textMode && !textContent)}>
           {uploading 
             ? 'Processing...' 
-            : (isAdmin ? 'Import to Pinecone (Fast-Track)' : 'Submit for Admin Approval')}
+            : 'Import to Pinecone (Direct)'}
         </button>
       </form>
     </div>

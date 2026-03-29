@@ -8,16 +8,11 @@ import {
   disbandOrganization, 
   updateMemberRole, 
   subscribeToOrganization, 
-  subscribeToUserOrgData, 
   submitOrgData,
-  subscribeToIngestionQueue,
-  deleteQueueItem,
-  updateOrgDataStatus,
   createOrganization,
   joinOrganization
 } from '../firebase/firestore'
-import { DEPARTMENTS } from '../data/mockData'
-import { RiBuildingLine, RiUpload2Line, RiFileTextLine, RiTimeLine, RiCheckLine, RiCloseLine, RiGroupLine, RiUserAddLine, RiShieldLine, RiInboxArchiveLine } from 'react-icons/ri'
+import { RiBuildingLine, RiFileTextLine, RiCloseLine, RiGroupLine, RiUserAddLine, RiShieldLine } from 'react-icons/ri'
 import DataUploader from '../components/DataUploader'
 import './OrgPage.css'
 
@@ -95,7 +90,6 @@ function OrgOnboarding() {
     try {
       await createOrganization(user.uid, orgName.trim(), user.email, user.displayName)
       addToast(`Organization "${orgName}" created!`, 'success')
-      // Note: AuthContext onSnapshot will catch the user.orgId update and unmount Onboarding.
     } catch (err) {
       console.error('[OrgOnboarding] Creation failed:', err)
       addToast(`Failed to create organization: ${err.message}`, 'error')
@@ -121,7 +115,6 @@ function OrgOnboarding() {
         </div>
 
         <div className="org-grid">
-          {/* Create Org */}
           <div className="card org-form-card">
             <h3 className="card-section-title">Create New Organization</h3>
             <form onSubmit={handleCreate} className="org-form">
@@ -141,7 +134,6 @@ function OrgOnboarding() {
             </form>
           </div>
 
-          {/* Pending Invites */}
           <div className="card org-submissions-card">
             <h3 className="card-section-title">Pending Invites ({invites.length})</h3>
             <div className="submissions-list">
@@ -178,38 +170,30 @@ function ActiveOrgDashboard({ activeOrgId }) {
 
   const [org, setOrg] = useState(null)
   const [members, setMembers] = useState([])
-  const [orgItems, setOrgItems] = useState([])
-  const [submitting, setSubmitting] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
 
-  // Load org data + RAG docs
   useEffect(() => {
     if (USE_MOCK || !activeOrgId) return
     const unsubOrg = subscribeToOrganization(activeOrgId, setOrg)
-    const unsubDocs = subscribeToUserOrgData(user.uid, activeOrgId, setOrgItems)
     
     const int = setInterval(() => {
        if (activeOrgId) getOrgMembers(activeOrgId).then(setMembers).catch(()=>{});
     }, 5000)
     
-    return () => { unsubOrg(); unsubDocs(); clearInterval(int) }
+    return () => { unsubOrg(); clearInterval(int) }
   }, [activeOrgId, user?.uid, USE_MOCK])
 
-  // Real-time cleanup: If org is deleted OR we are removed from members map (kicked)
   useEffect(() => {
      if (activeOrgId && !USE_MOCK) {
         if (org === null) {
            addToast('Organization no longer available.', 'info');
         } else if (org && org.members && !org.members[user.uid]) {
            addToast('You have been removed from the organization.', 'warning');
-           // The AuthContext listener for user.orgId will eventually trigger a parent-level reset
-           // but we can help it by just forcing a refresh if needed
         }
      }
   }, [org, activeOrgId, user.uid]);
 
-  // HOT PATCH: Auto-repair organization owners back to Administrators immediately 
   useEffect(() => {
     if (org?.members && activeOrgId && user) {
       if (org?.ownerId) {
@@ -238,12 +222,11 @@ function ActiveOrgDashboard({ activeOrgId }) {
     }
   }, [org?.ownerId, org?.members, activeOrgId, user]);
 
-  // Compute multi-tier permissions
   const isPatrick = user?.displayName?.toLowerCase().includes('patrick') || user?.email?.toLowerCase().includes('pstar');
   const myMemberInfo = org?.members?.[user.uid] || {}
   const myRole = isPatrick ? 'admin' : (myMemberInfo.role || 'querier')
   const isActuallyAdmin = isPatrick || myRole === 'admin'
-  const canAutoApprove = isPatrick || myMemberInfo.autoApprove || myRole === 'admin'
+  const canAutoApprove = true 
   const canImport = isPatrick || myRole === 'admin' || myRole === 'contributor'
   
   if (!org && !USE_MOCK) {
@@ -265,7 +248,7 @@ function ActiveOrgDashboard({ activeOrgId }) {
     }
   }
 
-  const handleUploaderSuccess = async (type, rawContent, isPending = false, reqId = null) => {
+  const handleUploaderSuccess = async (type, rawContent) => {
     try {
       const title = type === 'text' ? rawContent.slice(0, 30) + (rawContent.length > 30 ? '...' : '') : rawContent;
       await submitOrgData(user.uid, user.displayName, activeOrgId, {
@@ -273,8 +256,7 @@ function ActiveOrgDashboard({ activeOrgId }) {
         content: type === 'text' ? rawContent : 'Binary file vectorized to Pinecone',
         department: 'global',
         fileType: type === 'text' ? 'text' : 'document',
-        status: isPending ? 'pending' : 'approved',
-        active_req_id: reqId
+        status: 'approved'
       })
     } catch (err) {
       console.error('Failed to update UI feed:', err)
@@ -299,7 +281,6 @@ function ActiveOrgDashboard({ activeOrgId }) {
         </div>
 
         <div className="org-grid">
-          {/* Submit Data */}
           {canImport ? (
              <DataUploader 
                title="Upload Document for RAG" 
@@ -317,11 +298,8 @@ function ActiveOrgDashboard({ activeOrgId }) {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {/* Admin Controls */}
             {isActuallyAdmin && (
-              <>
-                <AdminQueue orgId={activeOrgId} onSuccess={handleUploaderSuccess} />
-                <div className="card org-submissions-card">
+              <div className="card org-submissions-card">
                 <h3 className="card-section-title"><RiUserAddLine style={{verticalAlign:'middle'}}/> Invite Members</h3>
                 <form onSubmit={handleInvite} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                   <input
@@ -340,10 +318,8 @@ function ActiveOrgDashboard({ activeOrgId }) {
                   </div>
                 )}
               </div>
-              </>
             )}
 
-            {/* Members List */}
             <div className="card org-submissions-card">
               <h3 className="card-section-title"><RiGroupLine style={{verticalAlign:'middle'}}/> Active Members ({members.length})</h3>
               <div className="submissions-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
@@ -352,20 +328,16 @@ function ActiveOrgDashboard({ activeOrgId }) {
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                       <strong>{m.displayName}</strong> <span style={{color:'var(--text-muted)', marginLeft: '0.5rem'}}>({m.email})</span>
                       <span className="badge badge-approved" style={{marginLeft:'auto', textTransform: 'capitalize'}}>
-                        {m.role === 'admin' ? 'Admins' : m.role === 'contributor' ? 'Upload (with approval)/Query' : 'Only Readers'}
+                        {m.role === 'admin' ? 'Admins' : m.role === 'contributor' ? 'Direct Upload/Query' : 'Only Readers'}
                       </span>
-                      {m.autoApprove && <span className="badge badge-warning" style={{marginLeft:'0.5rem'}}>Fast-Track</span>}
                     </div>
                     {isActuallyAdmin && m.uid !== user.uid && (
                       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', alignItems: 'center' }}>
                          <select className="form-select" style={{padding: '0.2rem 0.5rem', fontSize: '0.8rem', width: 'auto'}} value={m.role || 'querier'} onChange={(e) => updateMemberRole(activeOrgId, m.uid, { role: e.target.value })}>
                             <option value="admin">Admins</option>
-                            <option value="contributor">Upload (with approval)/Query</option>
+                            <option value="contributor">Direct Upload/Query</option>
                             <option value="querier">Only Readers</option>
                          </select>
-                         <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', margin: 0, color: m.autoApprove ? 'var(--color-success)' : 'var(--text-secondary)' }}>
-                           <input type="checkbox" checked={m.autoApprove || false} onChange={e => updateMemberRole(activeOrgId, m.uid, { autoApprove: e.target.checked })} /> Fast-Track Enabled (Direct Vectoring)
-                         </label>
                          <button className="btn btn-sm" style={{borderColor:'var(--color-danger)', color:'var(--color-danger)', background:'transparent', marginLeft:'auto'}} onClick={() => { if(window.confirm('Kick user?')) removeMember(activeOrgId, m.uid); }}>Kick</button>
                       </div>
                     )}
@@ -385,152 +357,8 @@ function ActiveOrgDashboard({ activeOrgId }) {
                  }}><RiCloseLine style={{verticalAlign:'middle'}}/> Disband Organization</button>
               )}
             </div>
-            
-            <div className="card org-submissions-card">
-              <h3 className="card-section-title"><RiFileTextLine style={{verticalAlign:'middle'}}/> My RAG Uploads</h3>
-              <div className="submissions-list">
-                {orgItems.length === 0 ? (
-                  <div className="empty-state" style={{ padding: '2rem' }}>
-                    <p>No documents uploaded yet.</p>
-                  </div>
-                ) : (
-                  orgItems.map(item => (
-                    <OrgDataItem key={item.id} item={item} />
-                  ))
-                )}
-              </div>
-            </div>
-
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function OrgDataItem({ item }) {
-  const { title, department, fileType, createdAt, status } = item
-  const date = createdAt?.toDate?.()?.toLocaleDateString() ?? '—'
-  
-  const isApproved = status === 'approved' || !status;
-  const isRejected = status === 'rejected';
-  
-  return (
-    <div className="submission-item card-hover" style={{ opacity: isRejected ? 0.6 : 1 }}>
-      <div className="submission-icon"><RiFileTextLine /></div>
-      <div className="submission-info">
-        <div className="submission-title">{title}</div>
-        <div className="submission-meta">
-          <span>{department}</span> · <span>{fileType}</span> · <span>{date}</span>
-        </div>
-      </div>
-      <div className="submission-status">
-        {isApproved ? (
-           <>
-            <RiCheckLine style={{ color: 'var(--color-success)' }} />
-            <span className="badge badge-approved" style={{color: 'var(--color-success)', borderColor: 'var(--color-success)'}}>Indexed</span>
-           </>
-        ) : isRejected ? (
-           <>
-            <RiCloseLine style={{ color: 'var(--color-danger)' }} />
-            <span className="badge" style={{color: 'var(--color-danger)', borderColor: 'var(--color-danger)'}}>Rejected</span>
-           </>
-        ) : (
-           <>
-            <RiTimeLine style={{ color: 'var(--color-warning)' }} />
-            <span className="badge" style={{color: 'var(--color-warning)', borderColor: 'var(--color-warning)'}}>Pending</span>
-           </>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function AdminQueue({ orgId, onSuccess }) {
-  const { addToast } = useApp()
-  const [queue, setQueue] = useState([])
-
-  useEffect(() => { 
-    if (!orgId) return
-    const unsub = subscribeToIngestionQueue(orgId, setQueue)
-    return () => unsub()
-  }, [orgId])
-
-  const [previewId, setPreviewId] = useState(null)
-
-  const action = async (req, act) => {
-    const fd = new FormData(); fd.append('req_id', req.req_id);
-    try {
-      await fetch(`http://localhost:8000/api/queue/${act}`, { method: 'POST', body: fd })
-      await deleteQueueItem(req.req_id)
-      
-      // SYNC THE ORG DATA ITEM
-      const status = act === 'approve' ? 'approved' : 'rejected';
-      // Search for the doc with this request ID
-      const { db } = await import('../firebase/config');
-      const { collection, query, where, getDocs, updateDoc, doc, serverTimestamp } = await import('firebase/firestore');
-      const q = query(collection(db, 'orgData'), where('active_req_id', '==', req.req_id));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-         await updateDoc(doc(db, 'orgData', snap.docs[0].id), { status, updatedAt: serverTimestamp() });
-      }
-
-      addToast(`Request ${act}d successfully`, 'success')
-      if (act === 'approve' && onSuccess) {
-        onSuccess(req.type, req.title)
-      }
-    } catch (err) {
-      addToast('Failed to process request', 'error')
-    }
-  }
-
-  return (
-    <div className="card org-submissions-card" style={{ borderColor: 'var(--color-warning)' }}>
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '1rem'}}>
-        <h3 className="card-section-title" style={{color: 'var(--color-warning)', margin: 0}}><RiShieldLine style={{verticalAlign:'middle'}}/> Pending Approvals ({queue.length})</h3>
-      </div>
-      <div className="submissions-list">
-        {queue.length === 0 ? (
-          <div className="empty-state" style={{ padding: '1.5rem', opacity: 0.6 }}>
-            <p>No pending upload requests for approval.</p>
-          </div>
-        ) : (
-          queue.map(q => (
-            <div key={q.req_id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div className="submission-info" style={{ flex: 1 }}>
-                  <div className="submission-title" style={{fontWeight: 'bold', fontSize: '0.9rem'}}>{q.title}</div>
-                  <div className="submission-meta">
-                    Source: <strong>{q.owner}</strong> · Type: {q.type}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn btn-sm" style={{borderColor: 'var(--color-accent)', color: 'var(--color-accent)', background: 'transparent'}} onClick={() => setPreviewId(previewId === q.req_id ? null : q.req_id)}>
-                    {previewId === q.req_id ? 'Hide' : 'Preview'}
-                  </button>
-                  <button className="btn btn-sm" style={{borderColor: 'var(--color-success)', color: 'var(--color-success)', background: 'transparent'}} onClick={() => action(q, 'approve')}>Accept</button>
-                  <button className="btn btn-sm" style={{borderColor: 'var(--color-danger)', color: 'var(--color-danger)', background: 'transparent'}} onClick={() => action(q, 'deny')}>Deny</button>
-                </div>
-              </div>
-              {previewId === q.req_id && q.preview && (
-                <div className="preview-box" style={{ 
-                  background: 'var(--color-bg-base)', 
-                  padding: '0.75rem', 
-                  borderRadius: '0.5rem', 
-                  fontSize: '0.8rem', 
-                  color: 'var(--text-secondary)',
-                  border: '1px dashed var(--color-accent)',
-                  maxHeight: '150px',
-                  overflowY: 'auto',
-                  whiteSpace: 'pre-wrap'
-                }}>
-                  <strong>Content Preview:</strong><br/>
-                  {q.preview}
-                </div>
-              )}
-            </div>
-          ))
-        )}
       </div>
     </div>
   )
