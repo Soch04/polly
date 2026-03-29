@@ -35,7 +35,7 @@ import {
   sendUserMessage, sendBotMessage, subscribeToUserMessages,
   getOrgDirectory, clearUserMessages, sendMention,
 } from '../firebase/firestore'
-import { callGemini } from '../agent/gemini'
+import { callGemini, streamGemini } from '../agent/gemini'
 import {
   buildSystemPrompt,
   buildMonologuePrompt,
@@ -178,12 +178,43 @@ export function useMessages() {
       if (USE_MOCK) {
         responseText = generateMockResponse(content)
       } else {
-        responseText = await callGemini({
+        // Create a streaming placeholder message immediately — updates progressively
+        const streamingId = `bot-streaming-${Date.now()}`
+        setMessages(prev => [
+          ...prev,
+          {
+            id:         streamingId,
+            type:       'bot-response',
+            senderName:  agent?.displayName ?? 'Your Agent',
+            senderType: 'agent',
+            content:    '',       // Empty initially — filled token by token
+            streaming:  true,     // UI shows streaming cursor indicator
+            timestamp:  new Date(),
+            citations:  [],
+          },
+        ])
+
+        responseText = await streamGemini({
           systemPrompt: fullPrompt,
           userMessage:  content,
           history:      activeHistory,
           temperature:  intent.temperature,
+          onChunk: (accumulated) => {
+            // Update the streaming message with each new token
+            setMessages(prev => prev.map(m =>
+              m.id === streamingId
+                ? { ...m, content: accumulated }
+                : m
+            ))
+          },
         })
+
+        // Mark streaming as complete — removes cursor indicator
+        setMessages(prev => prev.map(m =>
+          m.id === streamingId
+            ? { ...m, streaming: false }
+            : m
+        ))
       }
 
       // ── Step 5a: Check for escalation token ────────────────────────────────
