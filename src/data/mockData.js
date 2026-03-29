@@ -43,6 +43,13 @@ export const MOCK_AGENT = {
   systemInstructions: "",
 }
 
+export const MOCK_ALL_USERS = [
+  MOCK_USER,
+  MOCK_ADMIN,
+  { uid: 'user-003', displayName: 'Maya', email: 'maya@acmecorp.com', department: 'Product', role: 'member' },
+  { uid: 'user-004', displayName: 'Ryan', email: 'ryan@acmecorp.com', department: 'Marketing', role: 'member' },
+]
+
 // ── Messages ────────────────────────────────────────────────
 
 const now = Date.now()
