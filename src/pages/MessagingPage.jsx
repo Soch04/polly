@@ -60,14 +60,16 @@ export default function MessagingPage() {
             </h1>
             <p>Ask your agent questions about your Organization's Knowledge Base</p>
           </div>
-          <button 
-            className="btn btn-sm btn-danger" 
-            onClick={clearChat}
-            disabled={messages.length === 0}
-            title="Clear current chat history"
-          >
-            Clear Chat
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <button 
+              className="btn btn-sm btn-danger" 
+              onClick={clearChat}
+              disabled={messages.length === 0}
+              title="Clear current chat history"
+            >
+              Clear Chat
+            </button>
+          </div>
         </div>
       </div>
 

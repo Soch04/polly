@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import DataUploader from '../components/DataUploader'
 import { useAgent } from '../hooks/useAgent'
 import { createAgentDoc } from '../firebase/firestore'
 import { DEPARTMENTS } from '../data/mockData'
@@ -270,6 +271,14 @@ export default function BotSettingsPage() {
             {isDirty && <span className="unsaved-indicator">● Unsaved changes</span>}
           </div>
         </div>
+
+        <DataUploader 
+          title="Private Data Uploader" 
+          description="Vectorize raw text or documents directly into the Pinecone database using your personal identity tag."
+          orgId={user?.orgs?.[0] ?? 'global'}
+          ownerEmail={user.email} 
+          isAdmin={true}
+        />
 
         {/* ── Read-only Model Config ── */}
         <div className="card bot-model-card">

@@ -44,36 +44,29 @@ export function useMessages() {
     })
 
     // 2. Establish Python Engine WebSocket connection
-    const wsUrl = `ws://localhost:8000/ws/chat/${user.email}?org_id=${user.department ?? 'global'}&is_admin=${user.orgRole === 'admin'}`
+    const wsUrl = `ws://localhost:8000/ws/chat/${user.email}?org_id=${user?.orgId || 'global'}&is_admin=${user.orgRole === 'admin'}`
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data)
         
         if (data.type === 'bot_broadcast') {
-          const botMsg = {
-            id:         `bot-ws-${Date.now()}`,
-            type:       'bot-response',
-            senderName:  'Pinecone Vector Engine',
-            senderType: 'agent',
-            content:    data.text,
-            timestamp:  new Date(),
+          if (!USE_MOCK) {
+            await sendBotMessage(user.uid, data.text, 'Pinecone Vector Engine')
+          } else {
+            setMessages(prev => [...prev, { id: `bot-ws-${Date.now()}`, type: 'bot-response', senderName: 'Pinecone Vector Engine', senderType: 'agent', content: data.text, timestamp: new Date() }])
           }
-          setMessages(prev => [...prev, botMsg])
           setIsTyping(false)
         } 
         else if (data.type === 'cross_org_request') {
-          const hitlMsg = {
-            id:         `hitl-${data.req_id}`,
-            type:       'bot-response',
-            senderName:  'System Security (HITL)',
-            senderType: 'system',
-            content:    `🚨 Cross-Org Request from ${data.from_email}:\n> "${data.query}"\n\nTo approve this release, type exactly:\n/approve ${data.req_id}`,
-            timestamp:  new Date(),
+          const hitlContent = `🚨 Cross-Org Request from ${data.from_email}:\n> "${data.query}"\n\nTo approve this release, type exactly:\n/approve ${data.req_id}`
+          if (!USE_MOCK) {
+            await sendBotMessage(user.uid, hitlContent, 'System Security (HITL)')
+          } else {
+            setMessages(prev => [...prev, { id: `hitl-${data.req_id}`, type: 'bot-response', senderName: 'System Security (HITL)', senderType: 'system', content: hitlContent, timestamp: new Date() }])
           }
-          setMessages(prev => [...prev, hitlMsg])
         }
       } catch (e) {
         console.error('WS Parse Error:', e)
@@ -84,13 +77,14 @@ export function useMessages() {
       unsub()
       ws.close()
     }
-  }, [user?.uid, user?.email, user?.department, user?.orgRole])
+  }, [user?.uid, user?.email, user?.orgRole, user?.orgId])
 
   // ── Send a message to Python DB Vector Engine ────────────────
   const sendMessage = async (content, mentions = []) => {
     if (!content.trim() || isSending) return
     setIsSending(true)
 
+    // Optimistically update UI
     const userMsg = {
       id:         `tmp-${Date.now()}`,
       type:       'user',
@@ -99,10 +93,14 @@ export function useMessages() {
       content:    content.trim(),
       timestamp:  new Date(),
     }
-
     setMessages(prev => [...prev, userMsg])
     setIsTyping(true)
     setIsSending(false)
+
+    // Persist to database (triggers realtime sync)
+    if (!USE_MOCK) {
+      await sendUserMessage(user.uid, content, user.displayName).catch(console.error)
+    }
 
     // Capture HITL Approvals manually
     if (content.startsWith('/approve ')) {
@@ -120,8 +118,6 @@ export function useMessages() {
       console.error('Python WS execution failed:', err)
       setIsTyping(false)
     }
-
-
   }
 
   const handleClearChat = async () => {

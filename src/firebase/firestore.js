@@ -32,14 +32,19 @@ export const getOrgDirectory = (orgId) => {
 // ORGANIZATIONS & INVITES
 // ══════════════════════════════════════════════════════════
 
-export const createOrganization = async (userId, name, userEmail) => {
+export const createOrganization = async (userId, name, userEmail, userName) => {
   const orgDoc = await addDoc(collection(db, 'organizations'), {
     name,
     ownerId: userId,
     invites: [],
+    members: {
+      [userId]: { role: 'admin', autoApprove: true, email: userEmail, displayName: userName || userEmail }
+    },
     createdAt: serverTimestamp(),
   })
-  await updateUserDoc(userId, { orgId: orgDoc.id, orgRole: 'admin' })
+  await updateUserDoc(userId, { 
+    orgId: orgDoc.id
+  })
   return orgDoc.id
 }
 
@@ -51,28 +56,67 @@ export const inviteUserToOrg = (orgId, email) =>
     invites: arrayUnion(email.toLowerCase().trim())
   })
 
-export const joinOrganization = async (orgId, userId, email) => {
-  await updateUserDoc(userId, { orgId, orgRole: 'member' })
+export const joinOrganization = async (orgId, userId, email, userName) => {
+  await updateUserDoc(userId, { 
+    orgId: orgId
+  })
   await updateDoc(doc(db, 'organizations', orgId), {
-    invites: arrayRemove(email.toLowerCase().trim())
+    invites: arrayRemove(email.toLowerCase().trim()),
+    [`members.${userId}`]: { role: 'contributor', autoApprove: false, email, displayName: userName || email }
   })
 }
 
+export const removeMember = async (orgId, userId) => {
+  const { deleteField } = await import('firebase/firestore')
+  await updateDoc(doc(db, 'organizations', orgId), {
+    [`members.${userId}`]: deleteField()
+  })
+  await updateDoc(doc(db, 'users', userId), { orgId: null })
+}
+
+export const disbandOrganization = async (orgId, currentUserId) => {
+  const snap = await getDoc(doc(db, 'organizations', orgId))
+  const data = snap.data()
+  if (data?.members) {
+    for (const uid of Object.keys(data.members)) {
+       try { await updateDoc(doc(db, 'users', uid), { orgId: null }) } catch(e){}
+    }
+  }
+  // Safeguard: Ensure current user (even if not in members map) is cleared
+  if (currentUserId) {
+    try { await updateDoc(doc(db, 'users', currentUserId), { orgId: null }) } catch(e){}
+  }
+  const { deleteDoc } = await import('firebase/firestore')
+  await deleteDoc(doc(db, 'organizations', orgId))
+}
+
+export const updateMemberRole = async (orgId, uid, roleData) => {
+  // roleData is an object like { role: 'querier', autoApprove: false }
+  const prefix = Object.keys(roleData).reduce((acc, key) => {
+    acc[`members.${uid}.${key}`] = roleData[key]; return acc;
+  }, {});
+  await updateDoc(doc(db, 'organizations', orgId), prefix)
+}
 export const subscribeToOrgInvites = (email, callback) => {
   if (!email) return () => callback([])
+  const normalized = email.toLowerCase().trim();
   const q = query(
     collection(db, 'organizations'),
-    where('invites', 'array-contains', email.toLowerCase().trim())
+    where('invites', 'array-contains', normalized)
   )
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
   }, () => callback([]))
 }
 
-export const getOrgMembers = (orgId) => {
-  if (!orgId) return Promise.resolve([])
-  const q = query(collection(db, 'users'), where('orgId', '==', orgId))
-  return getDocs(q).then(snap => snap.docs.map(d => d.data()))
+export const getOrgMembers = async (orgId) => {
+  if (!orgId) return []
+  const snap = await getDoc(doc(db, 'organizations', orgId))
+  const data = snap.data()
+  if (!data || !data.members) return []
+  return Object.entries(data.members).map(([uid, info]) => ({
+    uid, ...info
+  }))
 }
 
 export const subscribeToOrganization = (orgId, callback) => {

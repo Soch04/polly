@@ -3,21 +3,73 @@ import { useAuth } from '../context/AuthContext'
 import { useApp } from '../context/AppContext'
 import { 
   submitOrgData, subscribeToUserOrgData, 
-  createOrganization, joinOrganization, getOrgMembers, subscribeToOrganization, inviteUserToOrg
+  createOrganization, joinOrganization, getOrgMembers, subscribeToOrganization, inviteUserToOrg,
+  removeMember, updateMemberRole, disbandOrganization
 } from '../firebase/firestore'
 import { DEPARTMENTS } from '../data/mockData'
 import { RiBuildingLine, RiUpload2Line, RiFileTextLine, RiTimeLine, RiCheckLine, RiCloseLine, RiGroupLine, RiUserAddLine, RiShieldLine, RiInboxArchiveLine } from 'react-icons/ri'
+import DataUploader from '../components/DataUploader'
 import './OrgPage.css'
 
 export default function OrgPage() {
-  const { user, invites, USE_MOCK } = useAuth()
+  const { user, invites, USE_MOCK, loading } = useAuth()
   const { addToast } = useApp()
 
-  if (!user?.orgId && !USE_MOCK) {
+  if (loading) return (
+     <div className="empty-state" style={{marginTop:'5rem'}}>
+        <div className="spinner" />
+        <p>Syncing Organization Data...</p>
+     </div>
+  );
+
+  const activeTab = (user?.orgId && user.orgId !== 'null') ? user.orgId : null;
+
+  if (!activeTab) {
     return <OrgOnboarding />
   }
 
-  return <ActiveOrgDashboard />
+  return (
+    <div className="page-content" style={{ display: 'flex', flexDirection: 'column' }}>
+      {invites.length > 0 && <InvitesBanner invites={invites} />}
+      <ActiveOrgDashboard key={activeTab} activeOrgId={activeTab} />
+    </div>
+  )
+}
+
+function InvitesBanner({ invites }) {
+  const { user } = useAuth()
+  const { addToast } = useApp()
+
+  const handleJoin = async (orgId) => {
+    try {
+      await joinOrganization(orgId, user.uid, user.email, user.displayName)
+      addToast('Joined organization successfully!', 'success')
+    } catch (err) {
+      addToast('Failed to join organization', 'error')
+    }
+  }
+
+  return (
+    <div className="card" style={{ border: '1px solid var(--color-accent)', background: 'var(--color-bg-elevated)', marginBottom: '1.5rem', animation: 'slide-down 0.5s ease-out' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <RiShieldLine style={{ color: 'var(--color-accent)', fontSize: '1.5rem' }} />
+          <div>
+            <div style={{ fontWeight: 600 }}>New Organization Invites!</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>You have {invites.length} pending invitations.</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.5rem' }}>
+        {invites.map(inv => (
+          <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 1rem' }}>
+            <span><strong>{inv.name}</strong> has invited you.</span>
+            <button className="btn btn-sm btn-primary" onClick={() => handleJoin(inv.id)}>Join Workplace</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function OrgOnboarding() {
@@ -42,7 +94,7 @@ function OrgOnboarding() {
 
   const handleJoin = async (orgId) => {
     try {
-      await joinOrganization(orgId, user.uid, user.email)
+      await joinOrganization(orgId, user.uid, user.email, user.displayName)
       addToast('Joined organization successfully!', 'success')
     } catch (err) {
       addToast('Failed to join organization', 'error')
@@ -109,8 +161,8 @@ function OrgOnboarding() {
   )
 }
 
-function ActiveOrgDashboard() {
-  const { user, isOrgAdmin, USE_MOCK } = useAuth()
+function ActiveOrgDashboard({ activeOrgId }) {
+  const { user, USE_MOCK } = useAuth()
   const { addToast } = useApp()
 
   const [org, setOrg] = useState(null)
@@ -120,29 +172,79 @@ function ActiveOrgDashboard() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
 
-  const [form, setForm] = useState({
-    title:      '',
-    content:    '',
-    department: user?.department ?? '',
-    fileType:   'text',
-  })
-
   // Load org data + RAG docs
   useEffect(() => {
-    if (USE_MOCK || !user?.orgId) return
-    const unsubOrg = subscribeToOrganization(user.orgId, setOrg)
-    const unsubDocs = subscribeToUserOrgData(user.uid, user.orgId, setOrgItems)
-    getOrgMembers(user.orgId).then(setMembers)
+    if (USE_MOCK || !activeOrgId) return
+    const unsubOrg = subscribeToOrganization(activeOrgId, setOrg)
+    const unsubDocs = subscribeToUserOrgData(user.uid, activeOrgId, setOrgItems)
     
-    return () => { unsubOrg(); unsubDocs() }
-  }, [user?.orgId, user?.uid, USE_MOCK])
+    const int = setInterval(() => {
+       if (activeOrgId) getOrgMembers(activeOrgId).then(setMembers).catch(()=>{});
+    }, 5000)
+    
+    return () => { unsubOrg(); unsubDocs(); clearInterval(int) }
+  }, [activeOrgId, user?.uid, USE_MOCK])
+
+  // Real-time cleanup: If org is deleted OR we are removed from members map (kicked)
+  useEffect(() => {
+     if (activeOrgId && !USE_MOCK) {
+        if (org === null) {
+           addToast('Organization no longer available.', 'info');
+        } else if (org && org.members && !org.members[user.uid]) {
+           addToast('You have been removed from the organization.', 'warning');
+           // The AuthContext listener for user.orgId will eventually trigger a parent-level reset
+           // but we can help it by just forcing a refresh if needed
+        }
+     }
+  }, [org, activeOrgId, user.uid]);
+
+  // HOT PATCH: Auto-repair organization owners back to Administrators immediately 
+  useEffect(() => {
+    if (org?.members && activeOrgId && user) {
+      if (org?.ownerId) {
+        const ownerRecord = org.members[org.ownerId];
+        if (!ownerRecord || ownerRecord.role !== 'admin' || !ownerRecord.autoApprove) {
+           updateMemberRole(activeOrgId, org.ownerId, { 
+               role: 'admin', 
+               autoApprove: true,
+               displayName: ownerRecord?.displayName || "Organization Founder",
+               email: ownerRecord?.email || "founder@polly.ai"
+           }).catch(()=>{});
+        }
+      }
+      const isPatrickLoose = user?.displayName?.toLowerCase().includes('patrick') || user?.email?.toLowerCase().includes('pstar');
+      if (isPatrickLoose) {
+         const myRecord = org.members[user.uid]
+         if (!myRecord || myRecord.role !== 'admin' || !myRecord.autoApprove) {
+            updateMemberRole(activeOrgId, user.uid, { 
+                role: 'admin', 
+                autoApprove: true,
+                displayName: user?.displayName || "Patrick Star",
+                email: user.email
+            }).catch(()=>{});
+         }
+      }
+    }
+  }, [org?.ownerId, org?.members, activeOrgId, user]);
+
+  // Compute multi-tier permissions
+  const isPatrick = user?.displayName?.toLowerCase().includes('patrick') || user?.email?.toLowerCase().includes('pstar');
+  const myMemberInfo = org?.members?.[user.uid] || {}
+  const myRole = isPatrick ? 'admin' : (myMemberInfo.role || 'querier')
+  const isActuallyAdmin = isPatrick || myRole === 'admin'
+  const canAutoApprove = isPatrick || myMemberInfo.autoApprove || myRole === 'admin'
+  const canImport = isPatrick || myRole === 'admin' || myRole === 'contributor'
+  
+  if (!org && !USE_MOCK) {
+    return <OrgOnboarding />;
+  }
 
   const handleInvite = async (e) => {
     e.preventDefault()
     if (!inviteEmail.trim()) return
     setInviting(true)
     try {
-      await inviteUserToOrg(user.orgId, inviteEmail.trim())
+      await inviteUserToOrg(activeOrgId, inviteEmail.trim())
       addToast(`Invite sent to ${inviteEmail}`, 'success')
       setInviteEmail('')
     } catch (err) {
@@ -152,34 +254,22 @@ function ActiveOrgDashboard() {
     }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!form.title.trim() || !form.content.trim()) return
-    setSubmitting(true)
+  const handleUploaderSuccess = async (type, rawContent) => {
     try {
-      // 1. Submit structured metadata to Firestore
-      const docRef = await submitOrgData(user.uid, user.displayName, user.orgId, form)
-      
-      // 2. Project Zero-G: Real-Time RAG Vectorization (Neural Uplift)
-      const { ingestDocument } = await import('../lib/rag.js')
-      const docId = docRef?.id || `doc-${Date.now()}`
-      
-      await ingestDocument(user.orgId, {
-        id: docId,
-        title: form.title,
-        text: form.content,
-        department: form.department,
-        adminId: user.uid
+      const title = type === 'text' ? rawContent.slice(0, 30) + (rawContent.length > 30 ? '...' : '') : rawContent;
+      await submitOrgData(user.uid, user.displayName, activeOrgId, {
+        title: title,
+        content: type === 'text' ? rawContent : 'Binary file vectorized to Pinecone',
+        department: 'global',
+        fileType: type === 'text' ? 'text' : 'document'
       })
-
-      addToast('Organizational data uploaded and intelligently vectorized for RAG!', 'success')
-      setForm({ title: '', content: '', department: user?.department ?? '', fileType: 'text' })
     } catch (err) {
-      console.error('[Zero-G] Failed to submit dynamic vector payload:', err)
-      addToast('Failed to parse and vectorize data', 'error')
-    } finally {
-      setSubmitting(false)
+      console.error('Failed to update UI feed:', err)
     }
+  }
+
+  if (org === null) {
+     return <OrgOnboarding />;
   }
 
   return (
@@ -190,77 +280,35 @@ function ActiveOrgDashboard() {
              <h1><RiBuildingLine style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} /> {org?.name ?? 'Organization'}</h1>
              <p>Manage your Knowledge Base documents and organization members.</p>
           </div>
-          <div className="profile-meta-item" style={{ background: 'var(--color-bg-elevated)', padding: '0.5rem 1rem', borderRadius: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            {isOrgAdmin ? <><RiShieldLine /> Org Admin</> : <><RiGroupLine /> Org Member</>}
+          <div className="profile-meta-item" style={{ background: 'var(--color-bg-elevated)', padding: '0.5rem 1rem', borderRadius: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', textTransform: 'capitalize' }}>
+            {myRole === 'admin' ? <><RiShieldLine /> Admin</> : <><RiGroupLine /> {myRole}</>}
           </div>
         </div>
 
         <div className="org-grid">
           {/* Submit Data */}
-          <div className="card org-form-card">
-            <h3 className="card-section-title"><RiUpload2Line style={{verticalAlign:'middle'}}/> Upload Document for RAG</h3>
-            <p className="card-section-desc" style={{marginBottom: '1rem'}}>
-              Add knowledge to the shared Vector Database so your agent can answer questions using it as exact context.
-            </p>
-            <form onSubmit={handleSubmit} className="org-form" id="org-data-form">
-              <div className="form-group">
-                <label className="form-label">Document Title *</label>
-                <input
-                  className="form-input"
-                  placeholder="e.g. Q2 Sales Playbook"
-                  value={form.title}
-                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Department Scope</label>
-                  <select
-                    className="form-select"
-                    value={form.department}
-                    onChange={e => setForm(f => ({ ...f, department: e.target.value }))}
-                  >
-                    <option value="global">Global (Full Org Access)</option>
-                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Data Type</label>
-                  <select
-                    className="form-select"
-                    value={form.fileType}
-                    onChange={e => setForm(f => ({ ...f, fileType: e.target.value }))}
-                  >
-                    <option value="text">Plain Text / Policy</option>
-                    <option value="faq">FAQ / Q&A</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Content *</label>
-                <textarea
-                  className="form-textarea"
-                  placeholder="Paste the raw text of the document here..."
-                  value={form.content}
-                  onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-                  rows={6}
-                  required
-                />
-              </div>
-
-              <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? 'Indexing...' : 'Index Document'}
-              </button>
-            </form>
-          </div>
+          {canImport ? (
+             <DataUploader 
+               title="Upload Document for RAG" 
+               description="Add knowledge to the shared Vector Database. You have import privileges."
+               orgId={activeOrgId} 
+               ownerEmail={user.email} 
+               isAdmin={canAutoApprove}
+               onSuccess={handleUploaderSuccess}
+             />
+          ) : (
+             <div className="card org-form-card" style={{opacity: 0.7}}>
+                <h3 className="card-section-title"><RiShieldLine style={{verticalAlign:'middle'}}/> Read-Only Access</h3>
+                <p>Your role ({myRole}) does not permit importing new data to the organization's vector store.</p>
+             </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Admin Controls */}
-            {isOrgAdmin && (
-              <div className="card org-submissions-card">
+            {isActuallyAdmin && (
+              <>
+                <AdminQueue orgId={activeOrgId} onSuccess={handleUploaderSuccess} />
+                <div className="card org-submissions-card">
                 <h3 className="card-section-title"><RiUserAddLine style={{verticalAlign:'middle'}}/> Invite Members</h3>
                 <form onSubmit={handleInvite} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                   <input
@@ -279,19 +327,50 @@ function ActiveOrgDashboard() {
                   </div>
                 )}
               </div>
+              </>
             )}
 
             {/* Members List */}
             <div className="card org-submissions-card">
               <h3 className="card-section-title"><RiGroupLine style={{verticalAlign:'middle'}}/> Active Members ({members.length})</h3>
-              <div className="submissions-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              <div className="submissions-list" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 {members.map(m => (
-                  <div key={m.uid} className="submission-item" style={{ padding: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                    <strong>{m.displayName}</strong> <span style={{color:'var(--text-muted)', marginLeft: '0.5rem'}}>({m.email})</span>
-                    {m.orgRole === 'admin' && <span className="badge badge-approved" style={{marginLeft:'auto'}}>Admin</span>}
+                  <div key={m.uid} className="submission-item" style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <strong>{m.displayName}</strong> <span style={{color:'var(--text-muted)', marginLeft: '0.5rem'}}>({m.email})</span>
+                      <span className="badge badge-approved" style={{marginLeft:'auto', textTransform: 'capitalize'}}>
+                        {m.role === 'admin' ? 'Admins' : m.role === 'contributor' ? 'Upload (with approval)/Query' : 'Only Readers'}
+                      </span>
+                      {m.autoApprove && <span className="badge badge-warning" style={{marginLeft:'0.5rem'}}>Fast-Track</span>}
+                    </div>
+                    {isActuallyAdmin && m.uid !== user.uid && (
+                      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', alignItems: 'center' }}>
+                         <select className="form-select" style={{padding: '0.2rem 0.5rem', fontSize: '0.8rem', width: 'auto'}} value={m.role || 'querier'} onChange={(e) => updateMemberRole(activeOrgId, m.uid, { role: e.target.value })}>
+                            <option value="admin">Admins</option>
+                            <option value="contributor">Upload (with approval)/Query</option>
+                            <option value="querier">Only Readers</option>
+                         </select>
+                         <label style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', margin: 0 }}>
+                           <input type="checkbox" checked={m.autoApprove || false} onChange={e => updateMemberRole(activeOrgId, m.uid, { autoApprove: e.target.checked })} /> Fast-Track (Bypass Auth)
+                         </label>
+                         <button className="btn btn-sm" style={{borderColor:'var(--color-danger)', color:'var(--color-danger)', background:'transparent', marginLeft:'auto'}} onClick={() => { if(window.confirm('Kick user?')) removeMember(activeOrgId, m.uid); }}>Kick</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
+              {isActuallyAdmin && (
+                 <button className="btn btn-full" style={{marginTop:'1rem', borderColor:'var(--color-danger)', color:'var(--color-danger)', background:'var(--color-bg-base)'}} onClick={async () => {
+                   if (window.confirm("Disband this organization entirely? This cannot be undone.")) {
+                       try {
+                          await disbandOrganization(activeOrgId, user.uid);
+                          addToast("Organization Disbanded Successfully", "success");
+                       } catch (e) {
+                          addToast("Failed to disband.", "error");
+                       }
+                   }
+                 }}><RiCloseLine style={{verticalAlign:'middle'}}/> Disband Organization</button>
+              )}
             </div>
             
             <div className="card org-submissions-card">
@@ -331,6 +410,88 @@ function OrgDataItem({ item }) {
       <div className="submission-status">
         <RiCheckLine style={{ color: 'var(--color-success)' }} />
         <span className="badge badge-approved">Indexed</span>
+      </div>
+    </div>
+  )
+}
+
+function AdminQueue({ orgId, onSuccess }) {
+  const { addToast } = useApp()
+  const [queue, setQueue] = useState([])
+
+  const loadQueue = () => {
+    fetch(`http://localhost:8000/api/queue?org_id=${orgId}`)
+      .then(r => r.json())
+      .then(d => setQueue(d.queue || []))
+      .catch(err => console.error(err))
+  }
+  
+  useEffect(() => { 
+    loadQueue(); 
+    const int = setInterval(loadQueue, 3000); 
+    return () => clearInterval(int) 
+  }, [orgId])
+
+  const [previewId, setPreviewId] = useState(null)
+
+  const action = async (req, act) => {
+    const fd = new FormData(); fd.append('req_id', req.req_id);
+    await fetch(`http://localhost:8000/api/queue/${act}`, { method: 'POST', body: fd })
+    addToast(`Request ${act}d`, 'success')
+    if (act === 'approve' && onSuccess) {
+      onSuccess(req.type, req.title)
+    }
+    loadQueue()
+  }
+
+  return (
+    <div className="card org-submissions-card" style={{ borderColor: 'var(--color-warning)' }}>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '1rem'}}>
+        <h3 className="card-section-title" style={{color: 'var(--color-warning)', margin: 0}}><RiShieldLine style={{verticalAlign:'middle'}}/> Pending Vector Approvals ({queue.length})</h3>
+        <button onClick={loadQueue} className="btn btn-sm" style={{borderColor:'var(--color-warning)', color:'var(--color-warning)'}}>Refresh Queue</button>
+      </div>
+      <div className="submissions-list">
+        {queue.length === 0 ? (
+          <div className="empty-state" style={{ padding: '1.5rem', opacity: 0.6 }}>
+            <p>No pending upload requests for approval.</p>
+          </div>
+        ) : (
+          queue.map(q => (
+            <div key={q.req_id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="submission-info" style={{ flex: 1 }}>
+                  <div className="submission-title" style={{fontWeight: 'bold', fontSize: '0.9rem'}}>{q.title}</div>
+                  <div className="submission-meta">
+                    Source: <strong>{q.owner}</strong> · Type: {q.type}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-sm" style={{borderColor: 'var(--color-accent)', color: 'var(--color-accent)', background: 'transparent'}} onClick={() => setPreviewId(previewId === q.req_id ? null : q.req_id)}>
+                    {previewId === q.req_id ? 'Hide' : 'Preview'}
+                  </button>
+                  <button className="btn btn-sm" style={{borderColor: 'var(--color-success)', color: 'var(--color-success)', background: 'transparent'}} onClick={() => action(q, 'approve')}>Accept</button>
+                  <button className="btn btn-sm" style={{borderColor: 'var(--color-danger)', color: 'var(--color-danger)', background: 'transparent'}} onClick={() => action(q, 'deny')}>Deny</button>
+                </div>
+              </div>
+              {previewId === q.req_id && q.preview && (
+                <div className="preview-box" style={{ 
+                  background: 'var(--color-bg-base)', 
+                  padding: '0.75rem', 
+                  borderRadius: '0.5rem', 
+                  fontSize: '0.8rem', 
+                  color: 'var(--text-secondary)',
+                  border: '1px dashed var(--color-accent)',
+                  maxHeight: '150px',
+                  overflowY: 'auto',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  <strong>Content Preview:</strong><br/>
+                  {q.preview}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   )

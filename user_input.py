@@ -106,9 +106,9 @@ def load_document(files: list, shared_org: str = "none", owner: str = "anonymous
             cleaned_documents = []
             for doc in document_objects:
                 doc.metadata["id"] = unique_id
-                doc.metadata["source"] = file_path.name
+                doc.metadata["source"] = f"File Import: {file_path.name}"
                 doc.metadata["type"] = mtype
-                doc.metadata["shared_orgs"] = [shared_org]
+                doc.metadata["org_id"] = shared_org
                 doc.metadata["owner"] = owner
 
                 try: 
@@ -188,18 +188,9 @@ def add_text_to_vectorstore(text: str, org_id: str = "global", owner: str = "ano
     if not text.strip():
         return
         
-    source_name = text[:30] + '...' if len(text) > 30 else text
+    source_name = "Text Import"
     unique_id = str(uuid4())
     
-    try:
-        res = pc.Index(index_name).query(
-            vector=[0.0] * 768, filter={"source": source_name}, top_k=1
-        )
-        if res.matches:
-            print(f"-> Skipping typed text: Already in VectorStore.")
-            return
-    except Exception as e: pass
-
     try: cleaned_text = preprocess_text(text)
     except: cleaned_text = text
 
@@ -224,13 +215,24 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 TEMP_DIR = Path("temp_uploads")
 TEMP_DIR.mkdir(exist_ok=True)
 
+UPLOAD_QUEUE = {}
+
 @app.post("/api/text")
-async def upload_text_endpoint(background_tasks: BackgroundTasks, text: str = Form(...), org_id: str = Form("global"), owner: str = Form("anonymous")):
-    background_tasks.add_task(add_text_to_vectorstore, text, org_id, owner)
-    return {"message": "Text queued for embedding"}
+async def upload_text_endpoint(background_tasks: BackgroundTasks, text: str = Form(...), org_id: str = Form("global"), owner: str = Form("anonymous"), is_admin: str = Form("false")):
+    if is_admin.lower() == "true":
+        background_tasks.add_task(add_text_to_vectorstore, text, org_id, owner)
+        return {"message": "Text queued for embedding", "queued": False}
+    else:
+        req_id = str(uuid4())
+        UPLOAD_QUEUE[req_id] = {
+            "req_id": req_id, "type": "text", "content": text, 
+            "org_id": org_id, "owner": owner, "title": "Text Import",
+            "preview": text[:500] + ("..." if len(text) > 500 else "")
+        }
+        return {"message": "Text queued for admin approval", "queued": True}
 
 @app.post("/api/upload")
-async def upload_files_endpoint(background_tasks: BackgroundTasks, files: List[UploadFile] = File(...), org_id: str = Form("global"), owner: str = Form("anonymous")):
+async def upload_files_endpoint(background_tasks: BackgroundTasks, files: List[UploadFile] = File(...), org_id: str = Form("global"), owner: str = Form("anonymous"), is_admin: str = Form("false")):
     saved_files = []
     for file in files:
         file_path = TEMP_DIR / file.filename
@@ -238,8 +240,51 @@ async def upload_files_endpoint(background_tasks: BackgroundTasks, files: List[U
             shutil.copyfileobj(file.file, buffer)
         saved_files.append(str(file_path))
     
-    background_tasks.add_task(add_to_vectorstore, saved_files, org_id, owner)
-    return {"message": f"Successfully queued files for embedding."}
+    if is_admin.lower() == "true":
+        background_tasks.add_task(add_to_vectorstore, saved_files, org_id, owner)
+        return {"message": "Successfully queued files for embedding.", "queued": False}
+    else:
+        req_id = str(uuid4())
+        # Brief preview extraction logic
+        preview_text = "Content Preview Loading..."
+        try:
+           preview_docs = load_document([saved_files[0]], org_id, owner)
+           if preview_docs and preview_docs[0]:
+              preview_text = preview_docs[0][0].page_content[:500] + ("..." if len(preview_docs[0][0].page_content) > 500 else "")
+        except: pass
+
+        UPLOAD_QUEUE[req_id] = {
+            "req_id": req_id, "type": "file", "files": saved_files, 
+            "org_id": org_id, "owner": owner, 
+            "title": f"File Import: {files[0].filename}" + (" and others" if len(files)>1 else ""),
+            "preview": preview_text
+        }
+        return {"message": "Files queued for admin approval", "queued": True}
+
+@app.get("/api/queue")
+async def get_queue(org_id: str):
+    return {"queue": [q for q in UPLOAD_QUEUE.values() if q["org_id"] == org_id]}
+
+@app.post("/api/queue/approve")
+async def approve_queue(background_tasks: BackgroundTasks, req_id: str = Form(...)):
+    if req_id not in UPLOAD_QUEUE:
+        return {"error": "Not found"}
+    req = UPLOAD_QUEUE.pop(req_id)
+    if req["type"] == "text":
+        background_tasks.add_task(add_text_to_vectorstore, req["content"], req["org_id"], req["owner"])
+    else:
+        background_tasks.add_task(add_to_vectorstore, req["files"], req["org_id"], req["owner"])
+    return {"message": "Approved"}
+
+@app.post("/api/queue/deny")
+async def deny_queue(req_id: str = Form(...)):
+    if req_id in UPLOAD_QUEUE:
+        req = UPLOAD_QUEUE.pop(req_id)
+        if req["type"] == "file":
+             for f in req["files"]:
+                 try: os.remove(f)
+                 except: pass
+    return {"message": "Denied"}
 
 @app.delete("/api/delete")
 async def delete_file_endpoint(source: str):
