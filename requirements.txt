@@ -2,7 +2,7 @@ langchain
 langchain-core
 langchain-community
 langchain-google-genai
-pinecone-client
+pinecone
 langchain-pinecone
 pypdf
 beautifulsoup4
