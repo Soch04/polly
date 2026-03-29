@@ -275,15 +275,15 @@ export function useMessages() {
   }
 
   const handleClearChat = async () => {
-    if (!window.confirm('Are you sure you want to clear your chat history? This cannot be undone.')) return
     try {
       if (!USE_MOCK && user?.uid) {
         await clearUserMessages(user.uid)
       }
       setMessages([])
       historyRef.current = []
-      addToast('Chat history cleared', 'success')
+      addToast('Chat cleared', 'success')
     } catch (err) {
+      console.error('[Borg] clearUserMessages failed:', err)
       addToast('Failed to clear chat', 'error')
     }
   }
