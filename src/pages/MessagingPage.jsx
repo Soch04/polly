@@ -73,22 +73,10 @@ export default function MessagingPage() {
                   <div className="feed-agent-model">{agent?.model ?? 'gemini-2.0-flash'} · RAG enabled</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className={`badge badge-${agent?.status ?? 'offline'}`}>
-                  <span className="badge-dot" />
-                  {agent?.status ?? 'offline'}
-                </span>
-                <button
-                  className="clear-chat-btn"
-                  onClick={clearChat}
-                  disabled={messages.length === 0}
-                  title="Clear chat"
-                  aria-label="Clear chat history"
-                  id="btn-clear-chat"
-                >
-                  <RiDeleteBinLine />
-                </button>
-              </div>
+              <span className={`badge badge-${agent?.status ?? 'offline'}`}>
+                <span className="badge-dot" />
+                {agent?.status ?? 'offline'}
+              </span>
             </div>
 
             <div className="msg-feed" ref={feedRef} role="log" aria-live="polite">
