@@ -41,6 +41,7 @@
  */
 
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../context/AppConfig'
+import { safeJsonParse, buildGeminiFetchOptions } from '../utils/apiHelpers'
 
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
@@ -64,20 +65,15 @@ export async function rerankResults(userQuery, candidates) {
   const scoringPrompt = buildScoringPrompt(userQuery, candidates)
 
   try {
-    const res = await fetch(`${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await fetch(`${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`,
+      buildGeminiFetchOptions({
         system_instruction: {
           parts: [{ text: 'You are a relevance scoring engine. Respond only with valid JSON. No explanation, no markdown, just the JSON object.' }]
         },
         contents: [{ role: 'user', parts: [{ text: scoringPrompt }] }],
-        generationConfig: {
-          temperature:     0.0,   // Deterministic scoring
-          maxOutputTokens: 256,   // Scores only — no verbose output
-        },
-      }),
-    })
+        generationConfig: { temperature: 0.0, maxOutputTokens: 256 },
+      })
+    )
 
     if (!res.ok) {
       console.warn(`[Borg Reranker] Gemini returned ${res.status} — using original ranking`)
@@ -162,19 +158,9 @@ Respond with ONLY a JSON object in this exact format (no other text):
  * @returns {number[] | null}
  */
 function parseScores(rawText, expectedLength) {
-  try {
-    // Extract JSON from the response (handles cases where Gemini wraps in markdown)
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return null
-
-    const parsed = JSON.parse(jsonMatch[0])
-    const scores = parsed?.scores
-
-    if (!Array.isArray(scores) || scores.length !== expectedLength) return null
-    if (!scores.every(s => typeof s === 'number' && s >= 0 && s <= 10)) return null
-
-    return scores
-  } catch {
-    return null
-  }
+  const parsed = safeJsonParse(rawText)
+  const scores = parsed?.scores
+  if (!Array.isArray(scores) || scores.length !== expectedLength) return null
+  if (!scores.every(s => typeof s === 'number' && s >= 0 && s <= 10)) return null
+  return scores
 }
