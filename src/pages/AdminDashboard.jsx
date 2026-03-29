@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useApp } from '../context/AppContext'
 import {
   MOCK_BOT_TO_BOT_ALL, MOCK_ORG_DATA, MOCK_ADMIN_STATS,
-  MOCK_ALL_AGENTS, DEPARTMENTS
+  MOCK_ALL_AGENTS, DEPARTMENTS, MOCK_ALL_USERS
 } from '../data/mockData'
-import { updateOrgDataStatus } from '../firebase/firestore'
+import { updateOrgDataStatus, updateUserRole } from '../firebase/firestore'
 import {
   RiShieldLine, RiArrowLeftRightLine, RiDatabase2Line,
   RiRobot2Line, RiCheckLine, RiCloseLine, RiTimeLine,
@@ -17,6 +17,7 @@ const TABS = [
   { id: 'dept-logs',  label: 'Dept Monitor',    icon: RiArrowLeftRightLine },
   { id: 'knowledge',  label: 'Knowledge Base',  icon: RiDatabase2Line     },
   { id: 'agents',     label: 'Agent Network',   icon: RiRobot2Line        },
+  { id: 'users',      label: 'User Directory',  icon: RiGroupLine         },
 ]
 
 export default function AdminDashboard() {
@@ -89,6 +90,7 @@ export default function AdminDashboard() {
         <KnowledgeBaseTab orgData={orgData} onUpdateStatus={handleOrgDataStatus} />
       )}
       {activeTab === 'agents' && <AgentNetworkTab />}
+      {activeTab === 'users' && <UserManagementTab />}
     </div>
     </div>
   )
@@ -320,6 +322,58 @@ function AgentNetworkTab() {
             </span>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── User Management Tab ── */
+function UserManagementTab() {
+  const { addToast } = useApp()
+  const [users, setUsers] = useState(MOCK_ALL_USERS)
+
+  const handleRoleChange = async (uid, newRole) => {
+    setUsers(users.map(u => u.uid === uid ? { ...u, role: newRole } : u))
+    try {
+      await updateUserRole(uid, newRole)
+    } catch {
+      // mock mode silently proceeds
+    }
+    addToast(`Role dynamically updated to ${newRole}`, 'success')
+  }
+
+  return (
+    <div className="agent-network animate-fade-in">
+      <div className="agent-network-grid" style={{ gridTemplateColumns: '1fr' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'var(--bg-surface)', borderRadius: '8px', overflow: 'hidden' }}>
+          <thead>
+            <tr style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>
+              <th style={{ padding: '16px' }}>Name</th>
+              <th style={{ padding: '16px' }}>Email</th>
+              <th style={{ padding: '16px' }}>Department</th>
+              <th style={{ padding: '16px' }}>Privilege Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(user => (
+              <tr key={user.uid} style={{ borderTop: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                <td style={{ padding: '16px', fontWeight: '500' }}>{user.displayName}</td>
+                <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>{user.email}</td>
+                <td style={{ padding: '16px' }}>{user.department}</td>
+                <td style={{ padding: '16px' }}>
+                  <select 
+                    value={user.role} 
+                    onChange={(e) => handleRoleChange(user.uid, e.target.value)}
+                    style={{ background: 'var(--bg-body)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '6px', borderRadius: '4px' }}
+                  >
+                    <option value="member">Member (Query-Only)</option>
+                    <option value="admin">Admin (Full Access)</option>
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

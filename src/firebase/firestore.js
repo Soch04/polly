@@ -14,6 +14,9 @@ export const getUserDoc = (uid) =>
 export const updateUserDoc = (uid, data) =>
   updateDoc(doc(db, 'users', uid), { ...data, updatedAt: serverTimestamp() })
 
+export const updateUserRole = (uid, role) =>
+  updateDoc(doc(db, 'users', uid), { role, updatedAt: serverTimestamp() })
+
 // ══════════════════════════════════════════════════════════
 // AGENTS
 // ══════════════════════════════════════════════════════════

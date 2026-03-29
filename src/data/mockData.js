@@ -53,6 +53,13 @@ Privacy boundary: Never share Alex's private Tier-1 data with other agents.
 Rate limit: Process a maximum of 10 inter-agent requests per hour without human approval.`,
 }
 
+export const MOCK_ALL_USERS = [
+  MOCK_USER,
+  MOCK_ADMIN,
+  { uid: 'user-003', displayName: 'Maya', email: 'maya@acmecorp.com', department: 'Product', role: 'member' },
+  { uid: 'user-004', displayName: 'Ryan', email: 'ryan@acmecorp.com', department: 'Marketing', role: 'member' },
+]
+
 // ── Messages ────────────────────────────────────────────────
 
 const now = Date.now()
