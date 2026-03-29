@@ -13,11 +13,9 @@
  */
 
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../context/AppConfig'
+import { isRetryableStatus } from '../utils/apiHelpers'
 
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
-
-/** Errors that are safe to retry (transient infrastructure issues) */
-const RETRYABLE_STATUSES = new Set([429, 500, 503])
 
 /**
  * Exponential backoff delay: 1s → 2s → 4s (with ±10% jitter to avoid thundering herd).
@@ -117,7 +115,7 @@ export async function callGemini({
     const errMsg   = errBody?.error?.message ?? res.statusText
     lastError = new Error(`Gemini API error ${res.status}: ${errMsg}`)
 
-    if (!RETRYABLE_STATUSES.has(res.status)) {
+    if (!isRetryableStatus(res.status)) {
       // 400 Bad Request, 401 Unauthorized, 404 Not Found — don't retry
       throw lastError
     }
