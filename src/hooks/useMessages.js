@@ -122,7 +122,7 @@ export function useMessages() {
         try {
           const filters = { is_approved: true }
           if (user.department && user.department !== 'Unassigned') {
-            filters.department = user.department
+            filters.department = { '$in': [user.department, 'global', 'all'] }
           }
 
           // ── Step 2a: HyDE — generate hypothetical document for embedding ───────────

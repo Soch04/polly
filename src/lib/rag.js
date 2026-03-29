@@ -45,7 +45,7 @@ import { getCachedEmbedding, setCachedEmbedding } from './embeddingCache';
 //   client → HTTPS Callable Function (authenticated) → Pinecone/Gemini SDK (server-side)
 //   This removes all API keys from the browser bundle entirely.
 const getPineconeKey   = () => import.meta.env.VITE_PINECONE_API_KEY;
-const getPineconeIndex = () => import.meta.env.VITE_PINECONE_INDEX;
+const getPineconeIndex = () => import.meta.env.VITE_PINECONE_INDEX || import.meta.env.VITE_PINECONE_INDEX_NAME;
 const getGeminiKey     = () => import.meta.env.VITE_GEMINI_API_KEY;
 
 // Lazy singletons — only created when first needed, not at module load time

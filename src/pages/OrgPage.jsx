@@ -288,6 +288,7 @@ function ActiveOrgDashboard({ activeOrgId }) {
                orgId={activeOrgId} 
                ownerEmail={user.email} 
                isAdmin={canAutoApprove}
+               department={user.department}
                onSuccess={handleUploaderSuccess}
              />
           ) : (

@@ -6,7 +6,7 @@ import { extractTextFromPDF } from '../lib/pdfParser';
 import { extractTextFromDocx } from '../lib/docxParser';
 import { v4 as uuidv4 } from 'uuid';
 
-export default function DataUploader({ title, description, orgId, ownerEmail, onSuccess, isAdmin }) {
+export default function DataUploader({ title, description, orgId, ownerEmail, onSuccess, isAdmin, department = 'global' }) {
   const { addToast } = useApp();
   const [textMode, setTextMode] = useState(false);
   const [textContent, setTextContent] = useState('');
@@ -27,7 +27,7 @@ export default function DataUploader({ title, description, orgId, ownerEmail, on
           id: `text_${uuidv4().slice(0, 8)}`,
           title: 'Direct Text Import',
           text: textContent,
-          department: 'global',
+          department: department,
           adminId: ownerEmail // Track owner as admin for audit
         });
         
@@ -50,7 +50,7 @@ export default function DataUploader({ title, description, orgId, ownerEmail, on
             id: `file_${uuidv4().slice(0, 8)}`,
             title: file.name,
             text: text,
-            department: 'global',
+            department: department,
             adminId: ownerEmail
           });
         }
