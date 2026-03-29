@@ -82,13 +82,12 @@ queryKnowledgeBase(orgId, userMessage, { is_approved: true, department? })
 
 ## Document Ingestion: What's Supported
 
-| Input method | How it works |
-|---|---|
-| **Text paste** | Raw text submitted via Admin Dashboard or DataUploader → stored in Firestore `orgData` → chunked and embedded on approval |
-| **`.txt` file upload** | File read client-side via `FileReader` → text extracted → same Firestore → Pinecone pipeline |
-| **`.pdf` / `.docx`** | Not supported in this client-only build — binary formats require server-side parsing |
-
-Text and `.txt` uploads are fully functional end-to-end. Copy-paste from any document format works via the Text Import mode.
+| Input method | How it works | Supported |
+|---|---|---|
+| **.pdf** | `pdfjs-dist` — client-side page iteration, text normalization, page markers | ✅ |
+| **.docx** | `mammoth.js` — client-side OOXML extraction, paragraphs + tables + lists | ✅ |
+| **.txt** | `FileReader` API | ✅ |
+| **Text paste** | Direct textarea input | ✅ |
 
 ---
 
@@ -177,7 +176,7 @@ Activates pre-seeded mock data — full UI works without credentials.
 | Chunk size | 1,000 chars, 200-char overlap |
 | Pinecone top-K | 5 per query |
 | Pinecone isolation | Namespace per `orgId` |
-| Lines of application code | 9,589 (JS/JSX/CSS, measured) |
+| Lines of application code | 10,248 (JS/JSX/CSS, measured) |
 | Git branches | `main`, `organization`, `theme`, `touch-ups`, `query-org` |
 
 ---

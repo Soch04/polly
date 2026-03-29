@@ -20,7 +20,10 @@
 - **`rag.js`**: Full ingestion + query pipeline
   - `ingestDocument()`: text → recursive character chunking (1000 chars / 200 overlap) → Gemini `text-embedding-004` (768-dim) → Pinecone namespace upsert
   - `queryKnowledgeBase()`: embed query → Pinecone top-K ANN search (topK=4/5/8 by intent) → metadata filter `is_approved:true` (server-side)
-- **`pdfParser.js`**: Client-side PDF text extraction via `pdfjs-dist`
+- **`docxParser.js`**: Client-side .docx text extraction via mammoth.js
+  - OOXML body text extraction: paragraphs, headings, lists, table cells
+  - No server dependency — mammoth handles the ZIP container in-browser
+  - Warning passthrough for unsupported elements (text boxes, drawing objects)
   - Full page iteration, text normalization, page-boundary markers
   - PDF metadata extraction (title, author, page count)
 - **`embeddingCache.js`**: LRU cache for Gemini embedding vectors
@@ -82,7 +85,7 @@
 | Raw text (paste) | Direct Firestore write → Pinecone on approval | ✅ Fully implemented |
 | `.txt` file | FileReader client-side → same pipeline | ✅ Fully implemented |
 | `.pdf` file | pdfjs-dist client-side extraction → same pipeline | ✅ Fully implemented |
-| `.docx` file | Requires server-side XML parsing | ⬜ Phase 2 (Cloud Functions) |
+| `.docx` file | mammoth.js client-side OOXML extraction → same pipeline | ✅ Fully implemented |
 
 ---
 
