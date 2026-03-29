@@ -38,11 +38,11 @@ export default function DataUploader({ title, description, orgId, ownerEmail, on
         // Direct Client-Side Ingestion for Files
         for (const file of Array.from(files)) {
           let text = '';
-          if (file.type === 'application/pdf') {
+          if (file?.type === 'application/pdf') {
             text = await extractTextFromPDF(file);
-          } else if (file.name.endsWith('.docx')) {
+          } else if (file?.name?.toLowerCase().endsWith('.docx')) {
             text = await extractTextFromDocx(file);
-          } else {
+          } else if (file) {
             text = await file.text();
           }
 
