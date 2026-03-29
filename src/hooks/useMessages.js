@@ -47,6 +47,7 @@ import {
 } from '../agent/buildPrompt'
 import { queryKnowledgeBase } from '../lib/rag'
 import { classifyQuery } from '../agent/queryClassifier'
+import { rerankResults } from '../lib/ragReranker'
 
 export function useMessages() {
   const { user, agent } = useAuth()
@@ -130,8 +131,13 @@ export function useMessages() {
           )
 
           if (rawResults.length > 0) {
-            // ── Step 3: Deduplicate + confidence-score citations ─────────────
-            const { block, citations } = buildCitationBlock(rawResults)
+            // ── Step 3a: LLM re-ranking — Gemini scores each chunk 0-10 ─────
+            // Filters out topically similar but non-answering chunks that pass
+            // embedding similarity but fail query-specific relevance judgment
+            const reranked = await rerankResults(content, rawResults)
+
+            // ── Step 3b: Deduplicate + confidence-score citations ────────────
+            const { block, citations } = buildCitationBlock(reranked)
             kbContext        = block
             messageCitations = citations.map(c => ({ id: c.id, title: c.title }))
           }
