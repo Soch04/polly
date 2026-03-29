@@ -3,6 +3,16 @@
 // Replace with real Firestore data as keys are added
 // ============================================================
 
+// ── Demo scenario selector ──────────────────────────────────
+// Change ACTIVE_MOCK_SCENARIO to switch between demo flows.
+// Defaults to ESCALATION so judges see the full human-in-the-loop flow.
+export const MOCK_SCENARIOS = {
+  CLEAN_RESOLUTION: 'clean_resolution',   // high confidence, no escalation
+  ESCALATION:       'escalation',         // low confidence, Teleportation fires
+  LOOP_CLOSURE:     'loop_closure',       // escalation already resolved
+}
+export const ACTIVE_MOCK_SCENARIO = MOCK_SCENARIOS.ESCALATION
+
 export const DEPARTMENTS = [
   'Engineering',
   'Product',
@@ -25,13 +35,8 @@ export const MOCK_USER = {
   calendarConnected: false,
 }
 
-export const MOCK_ADMIN = {
-  uid:         'admin-001',
-  displayName: 'Jordan Chen',
-  email:       'j.chen@acmecorp.com',
-  department:  'Operations',
-  role:        'admin',
-}
+// NOTE: MOCK_ADMIN removed — it was defined but never imported anywhere.
+// The admin user flow is tested via AuthContext (set role:'admin' in MOCK_USER).
 
 export const MOCK_AGENT = {
   userId:      'user-001',
@@ -216,13 +221,15 @@ export const MOCK_ORG_DATA = [
 
 // ── Agents in the org (for Admin view) ─────────────────────
 
+// confidenceScore: 0.0–1.0 — drives Teleportation/escalation demo flow.
+// Scores below CONFIDENCE_THRESHOLD (0.75) trigger human-in-the-loop.
 export const MOCK_ALL_AGENTS = [
-  { userId: 'user-001', displayName: "Alex's Agent",   department: 'Engineering', status: 'active',  lastSeen: ago(5 * 60 * 1000) },
-  { userId: 'user-002', displayName: "Priya's Agent",  department: 'Design',      status: 'active',  lastSeen: ago(2 * 60 * 1000) },
-  { userId: 'user-003', displayName: "Maya's Agent",   department: 'Product',     status: 'idle',    lastSeen: ago(20 * 60 * 1000) },
-  { userId: 'user-004', displayName: "Ryan's Agent",   department: 'Marketing',   status: 'offline', lastSeen: ago(3 * 60 * 60 * 1000) },
-  { userId: 'user-005', displayName: "Jordan's Agent", department: 'Operations',  status: 'active',  lastSeen: ago(1 * 60 * 1000) },
-  { userId: 'user-006', displayName: "Taylor's Agent", department: 'Sales',       status: 'active',  lastSeen: ago(8 * 60 * 1000) },
+  { userId: 'user-001', displayName: "Alex's Agent",   department: 'Engineering', status: 'active',  lastSeen: ago(5 * 60 * 1000),       confidenceScore: 0.92 },
+  { userId: 'user-002', displayName: "Priya's Agent",  department: 'Design',      status: 'active',  lastSeen: ago(2 * 60 * 1000),       confidenceScore: 0.88 },
+  { userId: 'user-003', displayName: "Maya's Agent",   department: 'Product',     status: 'idle',    lastSeen: ago(20 * 60 * 1000),      confidenceScore: 0.61 },
+  { userId: 'user-004', displayName: "Ryan's Agent",   department: 'Marketing',   status: 'offline', lastSeen: ago(3 * 60 * 60 * 1000),  confidenceScore: 0.45 },
+  { userId: 'user-005', displayName: "Jordan's Agent", department: 'Operations',  status: 'active',  lastSeen: ago(1 * 60 * 1000),       confidenceScore: 0.95 },
+  { userId: 'user-006', displayName: "Taylor's Agent", department: 'Sales',       status: 'active',  lastSeen: ago(8 * 60 * 1000),       confidenceScore: 0.79 },
 ]
 
 // ── Stat cards for Admin ────────────────────────────────────
@@ -237,14 +244,8 @@ export const MOCK_ADMIN_STATS = {
 
 // ── Conversations (Agent Communication Hub) ─────────────────
 
-export const CONTEXT_TYPES = [
-  'Scheduling',
-  'Policy Inquiry',
-  'Project Collaboration',
-  'Status Check',
-  'Data Request',
-  'Handoff',
-]
+// NOTE: CONTEXT_TYPES removed — it was defined but never imported anywhere.
+// Context types are used inline as string literals in mock conversation data below.
 
 export const MOCK_CONVERSATIONS = [
   // ── Direct Missions (1:1) ──────────────────────────────────

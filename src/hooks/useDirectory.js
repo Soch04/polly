@@ -36,7 +36,6 @@ export function useDirectory() {
 
     getOrgDirectory()
       .then(docs => {
-        console.log('[useDirectory] fetched', docs.length, 'members:', docs.map(d => d.displayName))
         const dir = docs.map(d => ({
           uid:         d.uid,
           displayName: d.displayName ?? d.email,

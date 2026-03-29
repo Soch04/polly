@@ -22,12 +22,10 @@ export function EscalationProvider({ children }) {
   const [escalation, setEscalationRaw] = useState(null)
 
   const setEscalation = useCallback((data) => {
-    console.log('[Escalation] Escalation triggered for convId:', data?.convId)
     setEscalationRaw(data)
   }, [])
 
   const clearEscalation = useCallback(() => {
-    console.log('[Escalation] Escalation cleared')
     setEscalationRaw(null)
   }, [])
 

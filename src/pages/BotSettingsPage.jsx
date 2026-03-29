@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useAgent } from '../hooks/useAgent'
 import { createAgentDoc } from '../firebase/firestore'
 import { DEPARTMENTS } from '../data/mockData'
+import { GEMINI_FLASH_MODEL, PROTOCOL_VERSION } from '../constants'
 import {
   RiRobot2Line, RiSaveLine, RiPulseLine, RiCodeSSlashLine,
   RiLockLine, RiCheckboxCircleLine, RiSparklingLine,
@@ -29,18 +30,18 @@ export default function BotSettingsPage() {
   const [initSaving,  setInitSaving]  = useState(false)
   const [initError,   setInitError]   = useState(null)
 
-  const handleInit = async (e) => {
+  const handleInit = useCallback(async (e) => {
     e.preventDefault()
     if (!initForm.department) { setInitError('Please select a department.'); return }
     setInitError(null)
     setInitSaving(true)
     try {
-      const instructions = initForm.systemInstructions.trim() ||
+      const finalInstructions = initForm.systemInstructions.trim() ||
         `You are the AI proxy for ${user.displayName}. Represent them professionally and accurately.`
       await createAgentDoc(user.uid, {
         displayName:        user.displayName,
         department:         initForm.department,
-        systemInstructions: instructions,
+        systemInstructions: finalInstructions,
       })
       // Refresh agent in global context so the whole app reacts
       setGlobalAgent({
@@ -48,8 +49,8 @@ export default function BotSettingsPage() {
         displayName:        `${user.displayName}'s Agent`,
         department:         initForm.department,
         status:             'active',
-        systemInstructions: instructions,
-        model:              'gemini-2.0-flash',
+        systemInstructions: finalInstructions,
+        model:              GEMINI_FLASH_MODEL,
         knowledgeScope:     ['global', initForm.department.toLowerCase()],
       })
     } catch (err) {
@@ -57,7 +58,15 @@ export default function BotSettingsPage() {
     } finally {
       setInitSaving(false)
     }
-  }
+  }, [initForm, user, setGlobalAgent])
+
+  const handleDeptChange = useCallback((e) => {
+    setInitForm(f => ({ ...f, department: e.target.value }))
+  }, [])
+
+  const handleInitInstructionsChange = useCallback((e) => {
+    setInitForm(f => ({ ...f, systemInstructions: e.target.value }))
+  }, [])
 
   if (!agent) {
     return (
@@ -88,7 +97,7 @@ export default function BotSettingsPage() {
                   id="init-dept"
                   className="form-select"
                   value={initForm.department}
-                  onChange={e => setInitForm(f => ({ ...f, department: e.target.value }))}
+                  onChange={handleDeptChange}
                   required
                 >
                   <option value="">Select your department...</option>
@@ -106,7 +115,7 @@ export default function BotSettingsPage() {
                   rows={8}
                   placeholder={`Describe how your agent should represent you.\n\nExamples:\n• Always respond in a formal, executive tone\n• Prioritize tasks related to product launches\n• Never share calendar details without my approval\n• When uncertain, ask me before responding`}
                   value={initForm.systemInstructions}
-                  onChange={e => setInitForm(f => ({ ...f, systemInstructions: e.target.value }))}
+                  onChange={handleInitInstructionsChange}
                 />
                 <p className="form-hint">
                   <RiLockLine style={{ verticalAlign: 'middle' }} /> Private — never shared with other agents.
@@ -131,15 +140,20 @@ export default function BotSettingsPage() {
     )
   }
 
-  const handleInstructionChange = (val) => {
+  const handleInstructionChange = useCallback((e) => {
+    const val = e.target.value
     setInstructions(val)
     setIsDirty(val !== agent.systemInstructions)
-  }
+  }, [agent?.systemInstructions])
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     await saveInstructions(instructions)
     setIsDirty(false)
-  }
+  }, [instructions, saveInstructions])
+
+  const handleStatusChange = useCallback((value) => {
+    changeStatus(value)
+  }, [changeStatus])
 
   return (
     <div className="page-content">
@@ -191,7 +205,7 @@ export default function BotSettingsPage() {
             <RiLockLine className="config-icon" />
             <div>
               <div className="config-label">Protocol Version</div>
-              <div className="config-value">borg-agent-handshake-v1</div>
+              <div className="config-value">{PROTOCOL_VERSION}</div>
             </div>
           </div>
         </div>
@@ -207,7 +221,7 @@ export default function BotSettingsPage() {
                 key={value}
                 id={`btn-status-${value}`}
                 className={`status-option ${agent.status === value ? 'selected' : ''}`}
-                onClick={() => changeStatus(value)}
+                onClick={() => handleStatusChange(value)}
                 style={{ '--status-color': color }}
               >
                 <div className="status-option-dot" />
@@ -259,7 +273,7 @@ export default function BotSettingsPage() {
             id="agent-instructions-input"
             className="form-textarea instructions-textarea"
             value={instructions}
-            onChange={(e) => handleInstructionChange(e.target.value)}
+            onChange={handleInstructionChange}
             placeholder="Describe your agent's behavior, priorities, and communication style..."
             rows={14}
             aria-label="Custom agent instructions"

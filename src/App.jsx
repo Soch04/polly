@@ -1,17 +1,29 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { AppProvider } from './context/AppContext'
 import { EscalationProvider } from './context/EscalationContext'
 import Layout from './components/layout/Layout'
 
-// Pages
-import AuthPage        from './pages/AuthPage'
-import MessagingPage   from './pages/MessagingPage'
-import ProfilePage     from './pages/ProfilePage'
-import BotSettingsPage from './pages/BotSettingsPage'
-import UserInputPage   from './pages/UserInputPage'
-import OrgPage         from './pages/OrgPage'
-import AdminDashboard  from './pages/AdminDashboard'
+// ── Route-level code splitting ─────────────────────────────────────────────
+// AuthPage loads eagerly (it's the entry point for unauthenticated users).
+// All other pages are lazy-loaded — they only download on first navigation.
+import AuthPage from './pages/AuthPage'
+const MessagingPage   = lazy(() => import('./pages/MessagingPage'))
+const ProfilePage     = lazy(() => import('./pages/ProfilePage'))
+const BotSettingsPage = lazy(() => import('./pages/BotSettingsPage'))
+const UserInputPage   = lazy(() => import('./pages/UserInputPage'))
+const OrgPage         = lazy(() => import('./pages/OrgPage'))
+const AdminDashboard  = lazy(() => import('./pages/AdminDashboard'))
+
+// ── Loading fallback ───────────────────────────────────────────────────────
+function PageLoader() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--color-bg)' }}>
+      <div className="spinner" />
+    </div>
+  )
+}
 
 /**
  * Guard that requires authentication.
@@ -20,11 +32,7 @@ import AdminDashboard  from './pages/AdminDashboard'
  */
 function AuthRoute({ children }) {
   const { user, loading, USE_MOCK } = useAuth()
-  if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'var(--color-bg)' }}>
-      <div className="spinner" />
-    </div>
-  )
+  if (loading) return <PageLoader />
   if (!USE_MOCK && !user) return <Navigate to="/auth" replace />
   return children
 }
@@ -32,6 +40,7 @@ function AuthRoute({ children }) {
 /**
  * Guard that requires the user to be an admin.
  * Redirects non-admins to /messaging.
+ * Admin check happens HERE — AdminDashboard itself can assume it's authorized.
  */
 function AdminRoute({ children }) {
   const { isAdmin, loading } = useAuth()
@@ -45,50 +54,52 @@ function AdminRoute({ children }) {
 function AppRoutes() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Auth — no sidebar */}
-        <Route path="/auth" element={<AuthPage />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Auth — no sidebar */}
+          <Route path="/auth" element={<AuthPage />} />
 
-        {/* Root redirect */}
-        <Route path="/" element={<Navigate to="/messaging" replace />} />
+          {/* Root redirect */}
+          <Route path="/" element={<Navigate to="/messaging" replace />} />
 
-        {/* Authenticated routes */}
-        <Route
-          path="/messaging"
-          element={<AuthRoute><Layout><MessagingPage /></Layout></AuthRoute>}
-        />
-        <Route
-          path="/profile"
-          element={<AuthRoute><Layout><ProfilePage /></Layout></AuthRoute>}
-        />
-        <Route
-          path="/bot-settings"
-          element={<AuthRoute><Layout><BotSettingsPage /></Layout></AuthRoute>}
-        />
-        <Route
-          path="/user-input"
-          element={<AuthRoute><Layout><UserInputPage /></Layout></AuthRoute>}
-        />
-        <Route
-          path="/org"
-          element={<AuthRoute><Layout><OrgPage /></Layout></AuthRoute>}
-        />
+          {/* Authenticated routes */}
+          <Route
+            path="/messaging"
+            element={<AuthRoute><Layout><MessagingPage /></Layout></AuthRoute>}
+          />
+          <Route
+            path="/profile"
+            element={<AuthRoute><Layout><ProfilePage /></Layout></AuthRoute>}
+          />
+          <Route
+            path="/bot-settings"
+            element={<AuthRoute><Layout><BotSettingsPage /></Layout></AuthRoute>}
+          />
+          <Route
+            path="/user-input"
+            element={<AuthRoute><Layout><UserInputPage /></Layout></AuthRoute>}
+          />
+          <Route
+            path="/org"
+            element={<AuthRoute><Layout><OrgPage /></Layout></AuthRoute>}
+          />
 
-        {/* Protected admin route */}
-        <Route
-          path="/admin"
-          element={
-            <AuthRoute>
-              <AdminRoute>
-                <Layout><AdminDashboard /></Layout>
-              </AdminRoute>
-            </AuthRoute>
-          }
-        />
+          {/* Protected admin route */}
+          <Route
+            path="/admin"
+            element={
+              <AuthRoute>
+                <AdminRoute>
+                  <Layout><AdminDashboard /></Layout>
+                </AdminRoute>
+              </AuthRoute>
+            }
+          />
 
-        {/* Catch-all → messaging */}
-        <Route path="*" element={<Navigate to="/messaging" replace />} />
-      </Routes>
+          {/* Catch-all → messaging */}
+          <Route path="*" element={<Navigate to="/messaging" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

@@ -1,16 +1,29 @@
+/**
+ * firebase/auth.js
+ *
+ * Firebase Authentication helpers.
+ * signUp() is atomic — if Firestore writes fail after Auth user creation,
+ * the Auth user is deleted to prevent orphaned accounts.
+ */
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
+  deleteUser,
 } from 'firebase/auth'
 import { auth, db } from './config'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { COLLECTIONS, AGENT_STATUS, GEMINI_LITE_MODEL, MAX_INTER_AGENT_REQUESTS_PER_HOUR } from '../constants'
 
 /**
- * Create a new user account.
- * Triggers: creates User doc + Agent Record in Firestore.
+ * Create a new user account (atomic).
+ * If Firestore document creation fails after Auth signup,
+ * the Auth user is deleted to prevent orphaned accounts.
+ *
+ * @param {{ email: string, password: string, displayName: string, department: string, role?: string }} params
+ * @returns {Promise<import('firebase/auth').User>}
  */
 export async function signUp({ email, password, displayName, department, role = 'member' }) {
   const credential = await createUserWithEmailAndPassword(auth, email, password)
@@ -19,42 +32,49 @@ export async function signUp({ email, password, displayName, department, role = 
   // Set display name on Firebase Auth profile
   await updateProfile(user, { displayName })
 
-  // ── Create User document ──────────────────────────────
-  await setDoc(doc(db, 'users', user.uid), {
-    uid:         user.uid,
-    email,
-    displayName,
-    department,
-    role,        // 'member' | 'admin'
-    linkedIn:    null,
-    calendarConnected: false,
-    createdAt:   serverTimestamp(),
-    updatedAt:   serverTimestamp(),
-  })
+  try {
+    // ── Create User document ──────────────────────────────
+    await setDoc(doc(db, COLLECTIONS.USERS, user.uid), {
+      uid:               user.uid,
+      email,
+      displayName,
+      department,
+      role,              // 'member' | 'admin'
+      linkedIn:          null,
+      calendarConnected: false,
+      createdAt:         serverTimestamp(),
+      updatedAt:         serverTimestamp(),
+    })
 
-  // ── Initialize Agent Record (the "bot" tied to this user) ──
-  // This is the hook that spawns the user's AI proxy
-  await setDoc(doc(db, 'agents', user.uid), {
-    userId:     user.uid,
-    displayName: `${displayName}'s Agent`,
-    department,
-    status:     'active',   // 'active' | 'idle' | 'offline'
-    // Default system instructions — customizable later
-    systemInstructions: buildDefaultInstructions(displayName, department),
-    model:      'gemini-2.5-flash-lite',
-    // RAG context scopes this agent is allowed to query
-    knowledgeScope: ['global', department.toLowerCase()],
-    // Memory — populated over time
-    conversationHistory: [],
-    createdAt:  serverTimestamp(),
-    updatedAt:  serverTimestamp(),
-  })
+    // ── Initialize Agent Record (the "bot" tied to this user) ──
+    await setDoc(doc(db, COLLECTIONS.AGENTS, user.uid), {
+      userId:     user.uid,
+      displayName: `${displayName}'s Agent`,
+      department,
+      status:     AGENT_STATUS.ACTIVE,
+      systemInstructions: buildDefaultInstructions(displayName, department),
+      model:      GEMINI_LITE_MODEL,
+      knowledgeScope: ['global', department.toLowerCase()],
+      conversationHistory: [],
+      createdAt:  serverTimestamp(),
+      updatedAt:  serverTimestamp(),
+    })
+  } catch (err) {
+    // Firestore write failed — roll back the Auth user to avoid orphaned accounts
+    await deleteUser(user).catch(() => {
+      // If deletion also fails, log for monitoring — not much else we can do
+      console.error('[Auth] CRITICAL: Auth user created but Firestore failed AND user deletion failed:', err.message)
+    })
+    throw new Error(`Account creation failed: ${err.message}`)
+  }
 
   return user
 }
 
 /**
  * Sign in an existing user.
+ * @param {{ email: string, password: string }} params
+ * @returns {Promise<import('firebase/auth').User>}
  */
 export async function signIn({ email, password }) {
   const credential = await signInWithEmailAndPassword(auth, email, password)
@@ -63,6 +83,7 @@ export async function signIn({ email, password }) {
 
 /**
  * Sign out the current user.
+ * @returns {Promise<void>}
  */
 export async function signOut() {
   return firebaseSignOut(auth)
@@ -90,5 +111,5 @@ Your core responsibilities:
 
 Communication style: Professional, concise, and factual.
 Privacy boundary: Never share ${name}'s private Tier-1 data with other agents.
-Rate limit: Process a maximum of 10 inter-agent requests per hour without human approval.`
+Rate limit: Process a maximum of ${MAX_INTER_AGENT_REQUESTS_PER_HOUR} inter-agent requests per hour without human approval.`
 }

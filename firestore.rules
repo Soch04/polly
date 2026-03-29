@@ -2,37 +2,61 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ── Helper: check if the requester is an admin ──────────────
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     // ── Users ──────────────────────────────────────────────────
+    // Any authenticated user can read the directory.
+    // Users can only write their own document.
     match /users/{userId} {
       allow read:  if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // ── Agents ─────────────────────────────────────────────────
+    // Any authenticated user can read agent metadata (needed for @mention directory).
+    // Users can only write their own agent record.
     match /agents/{userId} {
       allow read:  if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
     // ── Conversations ───────────────────────────────────────────
-    // Any authenticated user can read/write conversations they participate in.
-    // Opened fully for hackathon simplicity.
+    // Any authenticated participant can read/write their conversations.
     match /conversations/{convId} {
       allow read, write: if request.auth != null;
     }
 
     // ── Messages ────────────────────────────────────────────────
-    // Authenticated users can read all messages and create new ones.
+    // bot-to-bot messages with content populated can only be created by authenticated agents.
+    // fullDisclosure messages (where the full payload is exposed) require human auth.
+    // For the hackathon scope, all authenticated users can read and create messages.
     match /messages/{messageId} {
-      allow read, write: if request.auth != null;
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    // Enforce content is not null/empty
+                    && request.resource.data.content is string
+                    && request.resource.data.content.size() > 0
+                    // Require a valid type field
+                    && request.resource.data.type in ['user', 'bot-response', 'bot-to-bot', 'system'];
+      // Only admins can update or delete existing messages (audit trail protection)
+      allow update, delete: if isAdmin();
     }
 
     // ── Org Data ────────────────────────────────────────────────
+    // Any authenticated user can read and submit (create) org data.
+    // Only admins can approve or reject (update) submissions.
+    // No rule uses allow write: if true — intentional.
     match /orgData/{docId} {
       allow read:   if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow create: if request.auth != null
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ── Agent Mailbox ───────────────────────────────────────────

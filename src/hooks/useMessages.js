@@ -1,9 +1,29 @@
-import { useState, useEffect, useRef } from 'react'
+/**
+ * hooks/useMessages.js
+ *
+ * Manages the personal (user ↔ bot) message stream.
+ *
+ * Returns: { messages, loading, error, isTyping, isSending, sendMessage }
+ * - messages: filtered, sorted array ready to render (no bot-to-bot)
+ * - loading:  true while the initial Firestore snapshot is pending
+ * - error:    string | null
+ * - isTyping: true while waiting for Gemini response
+ * - isSending: true while Firestore write is in flight (double-submit guard)
+ * - sendMessage(content, mentions): dispatches a message + gets agent response
+ */
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useEscalation } from '../context/EscalationContext'
 import { USE_MOCK, ENABLE_INTERNAL_MONOLOGUE } from '../context/AppConfig'
 import { MOCK_MESSAGES } from '../data/mockData'
-import { sendUserMessage, sendBotMessage, subscribeToUserMessages, logBotToBotMessage, setConversationActive } from '../firebase/firestore'
+import {
+  sendUserMessage,
+  sendBotMessage,
+  subscribeToUserMessages,
+  logBotToBotMessage,
+  setConversationActive,
+} from '../firebase/firestore'
+import { MESSAGE_TYPES, MAX_MESSAGE_LENGTH } from '../constants'
 import { callGemini } from '../agent/gemini'
 import { dispatchAgentMessages } from '../agent/agentDispatcher'
 import { sanitizeAgentOutput } from '../agent/sanitize'
@@ -19,6 +39,8 @@ export function useMessages() {
   const { user, agent }                  = useAuth()
   const { escalation, clearEscalation }  = useEscalation()
   const [messages,   setMessages]   = useState([])
+  const [loading,    setLoading]    = useState(!USE_MOCK)
+  const [error,      setError]      = useState(null)
   const [isTyping,   setIsTyping]   = useState(false)
   const [isSending,  setIsSending]  = useState(false)
   const historyRef = useRef([])
@@ -26,14 +48,19 @@ export function useMessages() {
   // ── Load messages ──────────────────────────────────────────
   useEffect(() => {
     if (USE_MOCK) {
-      setMessages(MOCK_MESSAGES.filter(m => m.type !== 'bot-to-bot'))
+      // Filter out bot-to-bot messages — personal chat only shows user/bot-response
+      setMessages(MOCK_MESSAGES.filter(m => m.type !== MESSAGE_TYPES.BOT_TO_BOT))
+      setLoading(false)
       return
     }
     if (!user?.uid) return
+
+    setLoading(true)
     const unsub = subscribeToUserMessages(user.uid, (msgs) => {
-      const personal = msgs.filter(m => m.type !== 'bot-to-bot')
+      const personal = msgs.filter(m => m.type !== MESSAGE_TYPES.BOT_TO_BOT)
       setMessages(personal)
-      // Re-hydrate historyRef from loaded messages (last 10 turns max)
+      setLoading(false)
+      // Re-hydrate historyRef from loaded messages (last N turns per CONVERSATION_HISTORY_WINDOW)
       historyRef.current = personal.slice(-10).map(m => ({
         role:    m.senderType === 'human' ? 'user' : 'assistant',
         content: m.content,
@@ -44,17 +71,21 @@ export function useMessages() {
 
   // ── Send a message & get agent response ────────────────────
   // mentions: Array<{ uid, displayName, email, department }>
-  const sendMessage = async (content, mentions = []) => {
+  const sendMessage = useCallback(async (content, mentions = []) => {
     if (!content.trim() || isSending) return
+
+    // Trim + length cap
+    const sanitizedContent = content.trim().slice(0, MAX_MESSAGE_LENGTH)
+
     setIsSending(true)
+    setError(null)
 
     const userMsg = {
       id:                `tmp-${Date.now()}`,
-      type:              'user',
-      senderName:         user?.displayName ?? 'You',
+      type:              MESSAGE_TYPES.USER,
+      senderName:        user?.displayName ?? 'You',
       senderType:        'human',
-      content:           content.trim(),
-      // Updated message schema — target_user_emails carries mention routing data
+      content:           sanitizedContent,
       target_user_emails: mentions.map(m => m.email),
       mentions,
       timestamp:         new Date(),
@@ -64,19 +95,20 @@ export function useMessages() {
     setIsTyping(true)
     setIsSending(false)
 
-    // Persist user message to Firestore (if not mock)
+    // Persist user message to Firestore
     if (!USE_MOCK) {
-      await sendUserMessage(user.uid, content, user.displayName).catch(console.error)
+      await sendUserMessage(user.uid, sanitizedContent, user.displayName).catch(err => {
+        setError(err.message)
+      })
     }
 
     // ── Loop Closure: relay user's answer back to B2B thread ──
     // If there's an active escalation, the user's message IS the answer.
-    // Relay it to the requester's agent before processing the personal response.
     const activeEscalation = escalation
     if (!USE_MOCK && activeEscalation?.convId) {
       const myAgentName = agent?.displayName ?? `${user.displayName}'s Agent`
       const relayContent = sanitizeAgentOutput(
-        `${myAgentName} relaying answer from ${user.displayName}: ${content.trim()}`
+        `${myAgentName} relaying answer from ${user.displayName}: ${sanitizedContent}`
       )
       logBotToBotMessage(
         user.uid,
@@ -88,15 +120,14 @@ export function useMessages() {
         activeEscalation.convId,
       ).then(() => {
         setConversationActive(activeEscalation.convId, false).catch(() => {})
-        console.log('[useMessages] Escalation relay sent ✅')
-      }).catch(err => console.error('[useMessages] Relay failed:', err.message))
+      }).catch(err => setError(err.message))
       clearEscalation()
     }
 
     try {
       // ── Build prompt ──────────────────────────────────────
       const systemPrompt = buildSystemPrompt(user, agent, '', mentions)
-      const complex      = isComplexRequest(content)
+      const complex      = isComplexRequest(sanitizedContent)
       const fullPrompt   = (complex && ENABLE_INTERNAL_MONOLOGUE)
         ? systemPrompt + '\n\n' + buildMonologuePrompt()
         : systemPrompt
@@ -104,12 +135,11 @@ export function useMessages() {
       let responseText
 
       if (USE_MOCK) {
-        // Still use mock in mock mode
-        responseText = generateMockResponse(content)
+        responseText = generateMockResponse(sanitizedContent)
       } else {
         responseText = await callGemini({
           systemPrompt: fullPrompt,
-          userMessage:  content,
+          userMessage:  sanitizedContent,
           history:      historyRef.current,
         })
       }
@@ -119,7 +149,7 @@ export function useMessages() {
       if (isEscalation) {
         const escalationMsg = {
           id:         `esc-${Date.now()}`,
-          type:       'escalation',
+          type:       MESSAGE_TYPES.ESCALATION,
           senderName:  agent?.displayName ?? 'Your Agent',
           senderType: 'agent',
           content:    `I don't have enough information to answer confidently about: **${topic}**.\n\nCould you provide more context, or should I reach out to the relevant team's agent?`,
@@ -138,7 +168,7 @@ export function useMessages() {
 
       const botMsg = {
         id:          `bot-${Date.now()}`,
-        type:        'bot-response',
+        type:        MESSAGE_TYPES.BOT_RESPONSE,
         senderName:   agent?.displayName ?? 'Your Agent',
         senderType:  'agent',
         content:      parsed.finalAnswer,
@@ -154,24 +184,25 @@ export function useMessages() {
       // Update in-memory history for next turn
       historyRef.current = [
         ...historyRef.current,
-        { role: 'user',      content },
+        { role: 'user',      content: sanitizedContent },
         { role: 'assistant', content: parsed.finalAnswer },
       ].slice(-20)
 
-      // Persist bot response to Firestore (if not mock)
+      // Persist bot response to Firestore
       if (!USE_MOCK) {
-        await sendBotMessage(user.uid, parsed.finalAnswer, agent?.displayName).catch(console.error)
+        await sendBotMessage(user.uid, parsed.finalAnswer, agent?.displayName).catch(err => {
+          setError(err.message)
+        })
       }
 
       // Fire-and-forget B2B dispatch if @mentions present
       if (mentions.length > 0) {
-        const names = mentions.map(m => m.displayName).join(', ')
+        const names      = mentions.map(m => m.displayName).join(', ')
         const dispatchId = `dispatch-${Date.now()}`
 
-        // Immediately show a "dispatching…" system message
         const dispatchingMsg = {
           id:         dispatchId,
-          type:       'system',
+          type:       MESSAGE_TYPES.SYSTEM,
           senderType: 'system',
           content:    `📡 Initiating agent-to-agent contact with **${names}'s Agent**…`,
           timestamp:  new Date(),
@@ -179,31 +210,23 @@ export function useMessages() {
         setMessages(prev => [...prev, dispatchingMsg])
 
         if (!USE_MOCK) {
-          dispatchAgentMessages({ user, agent, userMessage: content, mentions })
+          dispatchAgentMessages({ user, agent, userMessage: sanitizedContent, mentions })
             .then(() => {
-              // Replace dispatching msg with success confirmation
               setMessages(prev => prev.map(m =>
                 m.id === dispatchId
-                  ? {
-                      ...m,
-                      content: `✅ Message sent to **${names}'s Agent** — open **Agent Hub** to monitor the conversation.`,
-                    }
+                  ? { ...m, content: `✅ Message sent to **${names}'s Agent** — open **Agent Hub** to monitor the conversation.` }
                   : m
               ))
             })
             .catch(err => {
-              console.error('[B2B Dispatch]', err)
               setMessages(prev => prev.map(m =>
                 m.id === dispatchId
-                  ? {
-                      ...m,
-                      content: `⚠️ Could not reach **${names}'s Agent**: ${err.message ?? 'Unknown error'}`,
-                    }
+                  ? { ...m, content: `⚠️ Could not reach **${names}'s Agent**: ${err.message ?? 'Unknown error'}` }
                   : m
               ))
             })
         } else {
-          // Mock mode — just show success after a brief delay
+          // Mock mode — show success after brief delay
           setTimeout(() => {
             setMessages(prev => prev.map(m =>
               m.id === dispatchId
@@ -215,22 +238,22 @@ export function useMessages() {
       }
 
     } catch (err) {
-      console.error('[Borg Agent] Gemini call failed:', err)
       const errorMsg = {
         id:         `err-${Date.now()}`,
-        type:       'bot-response',
+        type:       MESSAGE_TYPES.BOT_RESPONSE,
         senderName:  agent?.displayName ?? 'Your Agent',
         senderType: 'agent',
         content:    `I encountered an error processing your request. Please try again.\n\n_Technical: ${err.message}_`,
         timestamp:  new Date(),
       }
       setMessages(prev => [...prev, errorMsg])
+      setError(err.message)
     } finally {
       setIsTyping(false)
     }
-  }
+  }, [user, agent, escalation, clearEscalation, isSending])
 
-  return { messages, isTyping, isSending, sendMessage }
+  return { messages, loading, error, isTyping, isSending, sendMessage }
 }
 
 // ── Fallback mock response (used when VITE_USE_MOCK=true) ────

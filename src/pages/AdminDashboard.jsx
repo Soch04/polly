@@ -1,16 +1,20 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
+import { USE_MOCK } from '../context/AppConfig'
 import {
   MOCK_BOT_TO_BOT_ALL, MOCK_ORG_DATA, MOCK_ADMIN_STATS,
-  MOCK_ALL_AGENTS, DEPARTMENTS
+  MOCK_ALL_AGENTS,
 } from '../data/mockData'
 import { updateOrgDataStatus } from '../firebase/firestore'
+import { DEPARTMENTS } from '../data/mockData'
 import {
   RiShieldLine, RiArrowLeftRightLine, RiDatabase2Line,
   RiRobot2Line, RiCheckLine, RiCloseLine, RiTimeLine,
   RiFilterLine, RiGroupLine,
 } from 'react-icons/ri'
 import './AdminDashboard.css'
+
+// ── AdminDashboard page assumes it is already authorized (AdminRoute handles the check) ──
 
 const TABS = [
   { id: 'overview',   label: 'Overview',        icon: RiShieldLine        },
@@ -20,21 +24,31 @@ const TABS = [
 ]
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab,  setActiveTab]  = useState('overview')
   const [deptFilter, setDeptFilter] = useState('all')
-  const [orgData, setOrgData]     = useState(MOCK_ORG_DATA)
   const { addToast } = useApp()
 
-  const filteredLogs = deptFilter === 'all'
-    ? MOCK_BOT_TO_BOT_ALL
-    : MOCK_BOT_TO_BOT_ALL.filter(m => m.department === deptFilter)
+  // In live mode this would use a real Firestore subscription.
+  // Currently the dashboard is mock-only — USE_MOCK guard makes this explicit.
+  const botLogs = USE_MOCK ? MOCK_BOT_TO_BOT_ALL : []
+  const [orgData, setOrgData] = useState(USE_MOCK ? MOCK_ORG_DATA : [])
+
+  const filteredLogs = useMemo(() => (
+    deptFilter === 'all'
+      ? botLogs
+      : botLogs.filter(m => m.department === deptFilter)
+  ), [botLogs, deptFilter])
 
   const handleOrgDataStatus = async (id, status) => {
+    // Optimistic update
     setOrgData(prev => prev.map(d => d.id === id ? { ...d, status } : d))
     try {
-      await updateOrgDataStatus(id, status)
+      if (!USE_MOCK) {
+        await updateOrgDataStatus(id, status)
+      }
     } catch {
-      // mock mode — already updated local state
+      // Roll back on failure
+      setOrgData(prev => prev.map(d => d.id === id ? { ...d, status: d.status } : d))
     }
     addToast(`Document ${status === 'approved' ? 'approved' : 'rejected'}`, status === 'approved' ? 'success' : 'error')
   }
@@ -81,6 +95,7 @@ export default function AdminDashboard() {
       {activeTab === 'dept-logs' && (
         <DeptMonitorTab
           logs={filteredLogs}
+          allLogs={botLogs}
           deptFilter={deptFilter}
           setDeptFilter={setDeptFilter}
         />
@@ -96,7 +111,7 @@ export default function AdminDashboard() {
 
 /* ── Overview Tab ── */
 function OverviewTab() {
-  const stats = MOCK_ADMIN_STATS
+  const stats = USE_MOCK ? MOCK_ADMIN_STATS : { totalAgents: 0, activeAgents: 0, messagesLast24h: 0, pendingOrgData: 0, deptCount: 0 }
   return (
     <div className="overview-grid animate-fade-in">
       {[
@@ -139,7 +154,13 @@ function OverviewTab() {
 }
 
 /* ── Dept Monitor Tab ── */
-function DeptMonitorTab({ logs, deptFilter, setDeptFilter }) {
+function DeptMonitorTab({ logs, allLogs, deptFilter, setDeptFilter }) {
+  // Derive unique departments from the full log set (not filtered) so buttons always show
+  const uniqueDepts = useMemo(() =>
+    [...new Set(allLogs.map(m => m.department))],
+    [allLogs]
+  )
+
   return (
     <div className="dept-monitor animate-fade-in">
       <div className="dept-filter-bar">
@@ -150,7 +171,7 @@ function DeptMonitorTab({ logs, deptFilter, setDeptFilter }) {
             className={`dept-chip ${deptFilter === 'all' ? 'active' : ''}`}
             onClick={() => setDeptFilter('all')}
           >All</button>
-          {[...new Set(MOCK_BOT_TO_BOT_ALL.map(m => m.department))].map(dept => (
+          {uniqueDepts.map(dept => (
             <button
               key={dept}
               className={`dept-chip ${deptFilter === dept ? 'active' : ''}`}
@@ -202,9 +223,9 @@ function DeptMonitorTab({ logs, deptFilter, setDeptFilter }) {
 
 /* ── Knowledge Base Manager Tab ── */
 function KnowledgeBaseTab({ orgData, onUpdateStatus }) {
-  const pending  = orgData.filter(d => d.status === 'pending')
-  const approved = orgData.filter(d => d.status === 'approved')
-  const rejected = orgData.filter(d => d.status === 'rejected')
+  const pending  = useMemo(() => orgData.filter(d => d.status === 'pending'),  [orgData])
+  const approved = useMemo(() => orgData.filter(d => d.status === 'approved'), [orgData])
+  const rejected = useMemo(() => orgData.filter(d => d.status === 'rejected'), [orgData])
 
   return (
     <div className="kb-tab animate-fade-in">
@@ -288,9 +309,16 @@ function KBItem({ item, onUpdateStatus, showActions }) {
 /* ── Agent Network Tab ── */
 function AgentNetworkTab() {
   const [deptFilter, setDeptFilter] = useState('all')
-  const filtered = deptFilter === 'all'
-    ? MOCK_ALL_AGENTS
-    : MOCK_ALL_AGENTS.filter(a => a.department === deptFilter)
+  const allAgents = USE_MOCK ? MOCK_ALL_AGENTS : []
+
+  const filtered = useMemo(() => (
+    deptFilter === 'all' ? allAgents : allAgents.filter(a => a.department === deptFilter)
+  ), [allAgents, deptFilter])
+
+  const uniqueDepts = useMemo(() =>
+    [...new Set(allAgents.map(a => a.department))],
+    [allAgents]
+  )
 
   return (
     <div className="agent-network animate-fade-in">
@@ -298,7 +326,7 @@ function AgentNetworkTab() {
         <RiGroupLine className="filter-icon" />
         <div className="dept-chips">
           <button className={`dept-chip ${deptFilter === 'all' ? 'active' : ''}`} onClick={() => setDeptFilter('all')}>All</button>
-          {[...new Set(MOCK_ALL_AGENTS.map(a => a.department))].map(dept => (
+          {uniqueDepts.map(dept => (
             <button key={dept} className={`dept-chip ${deptFilter === dept ? 'active' : ''}`} onClick={() => setDeptFilter(dept)}>{dept}</button>
           ))}
         </div>

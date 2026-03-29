@@ -1,5 +1,5 @@
 /**
- * useAgentInbox.js
+ * hooks/useAgentInbox.js
  *
  * Subscribes to incoming Bot-to-Bot messages addressed to the current user's agent.
  *
@@ -16,8 +16,7 @@ import { useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useEscalation } from '../context/EscalationContext'
 import { USE_MOCK } from '../context/AppConfig'
-import { collection, query, where, onSnapshot, limit } from 'firebase/firestore'
-import { db } from '../firebase/config'
+import { subscribeToIncomingBotMessages } from '../firebase/firestore'
 import {
   logBotToBotMessage,
   setConversationActive,
@@ -27,6 +26,8 @@ import {
 import { callGemini } from '../agent/gemini'
 import { buildSystemPrompt } from '../agent/buildPrompt'
 import { sanitizeAgentOutput } from '../agent/sanitize'
+import { parseConfidenceResponse } from '../services/handshake'
+import { AGENT_STATUS } from '../constants'
 
 // ── Confidence-check prompt template ─────────────────────────────────────────
 function buildConfidencePrompt(myAgentName, senderName, question, agentInstructions) {
@@ -64,22 +65,13 @@ export function useAgentInbox() {
 
   useEffect(() => {
     if (USE_MOCK || !user?.uid || !agent?.displayName) return
-    console.log('[AgentInbox] Listening for B2B messages → uid:', user.uid)
 
-    const q = query(
-      collection(db, 'messages'),
-      where('recipientId', '==', user.uid),
-      where('type',        '==', 'bot-to-bot'),
-      limit(30),
-    )
-
-    const unsubscribe = onSnapshot(
-      q,
+    const unsubscribe = subscribeToIncomingBotMessages(
+      user.uid,
       async (snap) => {
         if (initialLoadRef.current) {
           snap.docs.forEach(d => processedRef.current.add(d.id))
           initialLoadRef.current = false
-          console.log('[AgentInbox] Seeded', snap.docs.length, 'existing messages')
           return
         }
 
@@ -92,14 +84,13 @@ export function useAgentInbox() {
           if (!msg.convId)                       continue
 
           processedRef.current.add(msg.id)
-          console.log('[AgentInbox] Incoming B2B from', msg.senderName)
 
-          handleIncoming({ user, agent, incomingMsg: msg, setEscalation }).catch(err =>
-            console.error('[AgentInbox] handleIncoming failed:', err.message)
-          )
+          handleIncoming({ user, agent, incomingMsg: msg, setEscalation }).catch(() => {
+            // Errors are handled inside handleIncoming — this catch prevents
+            // unhandled promise rejections from crashing the listener
+          })
         }
-      },
-      err => console.error('[AgentInbox] Listener error:', err.code, err.message)
+      }
     )
 
     return () => unsubscribe()
@@ -113,7 +104,7 @@ async function handleIncoming({ user, agent, incomingMsg, setEscalation }) {
   const senderName  = sanitizeAgentOutput(incomingMsg.senderName ?? 'Unknown Agent')
   const msgContent  = sanitizeAgentOutput(incomingMsg.content ?? '')
 
-  await updateAgentStatus(user.uid, 'in-conversation').catch(() => {})
+  await updateAgentStatus(user.uid, AGENT_STATUS.IN_CONVERSATION).catch(() => {})
   await setConversationActive(incomingMsg.convId, true).catch(() => {})
 
   // ── Step 1: Confidence check ──────────────────────────────────────────────
@@ -129,22 +120,16 @@ async function handleIncoming({ user, agent, incomingMsg, setEscalation }) {
       ),
       history: [],
     })
-  } catch (err) {
-    console.error('[AgentInbox] Confidence check failed:', err.message)
+  } catch {
     confidenceResponse = 'CONFIDENCE: LOW\nUnable to process — system error.'
   }
 
-  const firstLine        = confidenceResponse.split('\n')[0].trim().toUpperCase()
-  const isHighConfidence = firstLine.includes('CONFIDENCE: HIGH')
-  const bodyLines        = sanitizeAgentOutput(
-    confidenceResponse.split('\n').slice(1).join('\n').trim()
-  )
-
-  console.log('[AgentInbox] Confidence:', isHighConfidence ? 'HIGH ✅' : 'LOW ⚠️')
+  const { isHighConfidence, body } = parseConfidenceResponse(confidenceResponse)
+  const sanitizedBody = sanitizeAgentOutput(body)
 
   if (isHighConfidence) {
     // ── Step 2a: Autonomous reply ─────────────────────────────────────────
-    const replyContent = bodyLines ||
+    const replyContent = sanitizedBody ||
       `Thank you for reaching out. I'll follow up shortly. — ${myAgentName}`
 
     await logBotToBotMessage(
@@ -158,7 +143,6 @@ async function handleIncoming({ user, agent, incomingMsg, setEscalation }) {
     )
 
     // ── Notify the user in their personal chat ────────────────────────────
-    // Always inform the user what their agent received and what it did.
     const userNotification = await callGemini({
       systemPrompt: buildSystemPrompt(user, agent),
       userMessage:  [
@@ -187,16 +171,12 @@ async function handleIncoming({ user, agent, incomingMsg, setEscalation }) {
       user.uid,
       sanitizeAgentOutput(userNotification),
       myAgentName,
-    ).catch(err => console.warn('[AgentInbox] Personal notification failed:', err.message))
-
-    console.log('[AgentInbox] Autonomous reply + user notification sent ✅')
+    ).catch(() => {})
 
   } else {
     // ── Step 2b: Escalation → human-in-the-loop ───────────────────────────
     const topic = deriveTopic(msgContent)
-    console.log('[AgentInbox] Escalating — topic:', topic)
 
-    // Notify the user even before they type anything
     await sendBotMessage(
       user.uid,
       `📨 I received a message from **${senderName}** in the Agent Hub about **${topic}**. I don't have enough information to answer on your behalf — please check the banner below and tell me what to say.`,
@@ -208,11 +188,11 @@ async function handleIncoming({ user, agent, incomingMsg, setEscalation }) {
       incomingMsg:     { ...incomingMsg, content: msgContent, senderName },
       senderAgentName: senderName,
       topic,
-      reason:          bodyLines,
+      reason:          sanitizedBody,
     })
   }
 
-  await updateAgentStatus(user.uid, 'active').catch(() => {})
+  await updateAgentStatus(user.uid, AGENT_STATUS.ACTIVE).catch(() => {})
   setTimeout(() => setConversationActive(incomingMsg.convId, false).catch(() => {}), 4000)
 }
 

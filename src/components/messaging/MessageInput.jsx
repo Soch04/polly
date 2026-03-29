@@ -7,7 +7,6 @@ export default function MessageInput({ onSend, disabled }) {
   const [value,       setValue]       = useState('')
   const [mentions,    setMentions]    = useState([])   // confirmed @mentions
   const [query,       setQuery]       = useState(null) // active @query string | null
-  const [dropdownPos, setDropdownPos] = useState(0)    // cursor offset in text
   const [highlighted, setHighlighted] = useState(0)   // keyboard nav index
 
   const textareaRef  = useRef(null)

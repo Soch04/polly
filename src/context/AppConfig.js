@@ -1,15 +1,19 @@
 /**
- * AppConfig — reads VITE_ feature flags from .env
- * Import these constants instead of reading import.meta.env directly.
+ * context/AppConfig.js
+ *
+ * Re-exports from src/config/env.js for backward compatibility.
+ * All new code should import from '../config/env' directly.
  */
+import { ENV } from '../config/env'
+import { GEMINI_LITE_MODEL } from '../constants'
 
-export const USE_MOCK    = import.meta.env.VITE_USE_MOCK    === 'true'
-export const ENABLE_INTERNAL_MONOLOGUE = import.meta.env.VITE_ENABLE_INTERNAL_MONOLOGUE === 'true'
-export const HIDE_ORG_DATA_UI         = import.meta.env.VITE_HIDE_ORG_DATA_UI          === 'true'
+export const USE_MOCK                   = ENV.USE_MOCK
+export const ENABLE_INTERNAL_MONOLOGUE  = ENV.ENABLE_INTERNAL_MONOLOGUE
+export const HIDE_ORG_DATA_UI           = ENV.HIDE_ORG_DATA_UI
 
-export const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? ''
-export const GEMINI_MODEL   = 'gemini-2.5-flash-lite'
+export const GEMINI_API_KEY  = ENV.GEMINI_API_KEY
+export const GEMINI_MODEL    = GEMINI_LITE_MODEL   // canonical model constant
 
-export const PINECONE_API_KEY   = import.meta.env.VITE_PINECONE_API_KEY   ?? ''
-export const PINECONE_ENV       = import.meta.env.VITE_PINECONE_ENVIRONMENT ?? ''
-export const PINECONE_INDEX     = import.meta.env.VITE_PINECONE_INDEX_NAME  ?? 'borg-knowledge'
+export const PINECONE_API_KEY = ENV.PINECONE_API_KEY
+export const PINECONE_ENV     = ENV.PINECONE_ENVIRONMENT
+export const PINECONE_INDEX   = ENV.PINECONE_INDEX_NAME
