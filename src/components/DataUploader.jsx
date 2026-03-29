@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { RiUploadCloud2Line, RiFileTextLine } from 'react-icons/ri';
 import { useApp } from '../context/AppContext';
-import { db } from '../firebase/config';
-import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { ingestDocument } from '../lib/rag';
+import { extractTextFromPDF } from '../lib/pdfParser';
+import { extractTextFromDocx } from '../lib/docxParser';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function DataUploader({ title, description, orgId, ownerEmail, onSuccess, isAdmin }) {
   const { addToast } = useApp();
@@ -20,41 +22,47 @@ export default function DataUploader({ title, description, orgId, ownerEmail, on
     setUploading(true);
     try {
       if (textMode) {
-        const formData = new FormData();
-        formData.append('text', textContent);
-        formData.append('org_id', orgId);
-        formData.append('owner', ownerEmail);
-        formData.append('is_admin', isAdmin ? 'true' : 'false');
-        
-        const res = await fetch('http://localhost:8000/api/text', {
-          method: 'POST',
-          body: formData
+        // Direct Client-Side Ingestion for Text
+        await ingestDocument(orgId, {
+          id: `text_${uuidv4().slice(0, 8)}`,
+          title: 'Direct Text Import',
+          text: textContent,
+          department: 'global',
+          adminId: ownerEmail // Track owner as admin for audit
         });
-        const data = await res.json();
         
-        addToast('Text successfully vectorized!', 'success');
+        addToast('Text successfully vectorized to Pinecone!', 'success');
         if (onSuccess) onSuccess('text', textContent, false);
         setTextContent('');
       } else {
-        const formData = new FormData();
-        Array.from(files).forEach(file => formData.append('files', file));
-        formData.append('org_id', orgId);
-        formData.append('owner', ownerEmail);
-        formData.append('is_admin', isAdmin ? 'true' : 'false');
+        // Direct Client-Side Ingestion for Files
+        for (const file of Array.from(files)) {
+          let text = '';
+          if (file.type === 'application/pdf') {
+            text = await extractTextFromPDF(file);
+          } else if (file.name.endsWith('.docx')) {
+            text = await extractTextFromDocx(file);
+          } else {
+            text = await file.text();
+          }
+
+          await ingestDocument(orgId, {
+            id: `file_${uuidv4().slice(0, 8)}`,
+            title: file.name,
+            text: text,
+            department: 'global',
+            adminId: ownerEmail
+          });
+        }
         
-        const res = await fetch('http://localhost:8000/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await res.json();
-        
-        addToast('Documents successfully vectorized!', 'success');
+        addToast('Documents successfully vectorized to Pinecone!', 'success');
         if (onSuccess) onSuccess('documents', Array.from(files).map(f => f.name).join(', '), false);
         setFiles([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
     } catch (err) {
-      addToast('Upload failed. Is the Python engine running?', 'error');
+      console.error('Ingestion failed:', err);
+      addToast(`Upload failed: ${err.message}`, 'error');
     } finally {
       setUploading(false);
     }
