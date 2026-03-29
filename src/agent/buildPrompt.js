@@ -6,6 +6,8 @@
  * response in the user's real profile, instructions, and context.
  */
 
+import { trimToTokenBudget } from '../lib/tokenBudget'
+
 /**
  * Deduplicate + format RAG results into a structured knowledge block for the system prompt.
  * Pinecone can return multiple chunks from the same document (chunk overlap). This
@@ -49,7 +51,10 @@ export function buildCitationBlock(ragResults = []) {
     'If none of these documents answer the question, output [ESCALATE: <topic>] — do not guess.',
   ].join('\n\n')
 
-  return { block, citations }
+  // Trim the assembled block to fit within Gemini's context window budget
+  const safeBock = trimToTokenBudget(block)
+
+  return { block: safeBock, citations }
 }
 
 /**
