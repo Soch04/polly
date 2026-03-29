@@ -52,9 +52,9 @@ export function buildCitationBlock(ragResults = []) {
   ].join('\n\n')
 
   // Trim the assembled block to fit within Gemini's context window budget
-  const safeBock = trimToTokenBudget(block)
+  const safeBlock = trimToTokenBudget(block)
 
-  return { block: safeBock, citations }
+  return { block: safeBlock, citations }
 }
 
 /**
