@@ -11,6 +11,7 @@ import { callGemini } from '../agent/gemini'
 import {
   buildSystemPrompt,
   buildMonologuePrompt,
+  buildCitationBlock,
   isComplexRequest,
   parseEscalation,
   parseMonologue,
@@ -84,14 +85,13 @@ export function useMessages() {
             filters.department = user.department
           }
 
-          const results = await queryKnowledgeBase(user.orgId, content, filters)
+          const rawResults = await queryKnowledgeBase(user.orgId, content, filters)
 
-          if (results.length > 0) {
-            kbContext = results
-              .map(r => `### DOCUMENT: ${r.title} (ID: ${r.docId})\n${r.text}`)
-              .join('\n\n')
-
-            messageCitations = results.map(r => ({ id: r.docId, title: r.title }))
+          if (rawResults.length > 0) {
+            // Deduplicate chunks from same document, score by cosine similarity
+            const { block, citations } = buildCitationBlock(rawResults)
+            kbContext        = block
+            messageCitations = citations.map(c => ({ id: c.id, title: c.title }))
           }
         } catch (kbErr) {
           console.warn('[Borg] Failed to query knowledge base:', kbErr)
