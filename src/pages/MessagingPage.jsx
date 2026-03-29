@@ -10,22 +10,13 @@ import './MessagingPage.css'
 
 export default function MessagingPage() {
   const { user, agent, loading, USE_MOCK } = useAuth()
-  const { messages, isTyping, isSending, sendMessage } = useMessages()
+  const { messages, isTyping, isSending, sendMessage, clearChat } = useMessages()
   
   const [orgDocs, setOrgDocs] = useState([])
+  const [highlightedDocId, setHighlightedDocId] = useState(null)
   const feedRef = useRef(null)
 
-  // While auth is still resolving, show a spinner instead of premature redirect
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
-      <div className="spinner" />
-    </div>
-  )
-  // Only redirect if we're sure the user is loaded and there's still no agent doc
-  if (!USE_MOCK && user && !agent) return <Navigate to="/bot-settings" replace />
-  // Note: if user.orgId is null, they should technically be on /org to create one!
-  // But we'll let them stay here and see empty state.
-
+  // ── All hooks must be before any conditional returns ────────
   useEffect(() => {
     if (USE_MOCK || !user?.orgId) return
     const unsub = subscribeToOrgData(user.orgId, setOrgDocs)
@@ -38,16 +29,45 @@ export default function MessagingPage() {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }, [messages, isTyping])
 
+  // ── Conditional returns AFTER all hooks ─────────────────────
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+      <div className="spinner" />
+    </div>
+  )
+  if (!USE_MOCK && user && !agent) return <Navigate to="/bot-settings" replace />
+
+  const handleHighlightDoc = (docId) => {
+    setHighlightedDocId(docId)
+    // Scroll to the element
+    const el = document.getElementById(`doc-item-${docId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    // Remove highlight after a few seconds
+    setTimeout(() => setHighlightedDocId(null), 3000)
+  }
+
   return (
     <div className="msg-page rag-query-page">
       {/* ── Page header ─────────────────────────────────────── */}
       <div className="msg-page-header">
-        <div>
-          <h1>
-            <RiSearchEyeLine style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
-            RAG Query
-          </h1>
-          <p>Ask your agent questions about your Organization's Knowledge Base</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div>
+            <h1>
+              <RiSearchEyeLine style={{ verticalAlign: 'middle', marginRight: '0.5rem' }} />
+              Query
+            </h1>
+            <p>Ask your agent questions about your Organization's Knowledge Base</p>
+          </div>
+          <button 
+            className="btn btn-sm btn-danger" 
+            onClick={clearChat}
+            disabled={messages.length === 0}
+            title="Clear current chat history"
+          >
+            Clear Chat
+          </button>
         </div>
       </div>
 
@@ -80,7 +100,7 @@ export default function MessagingPage() {
                 </div>
               )}
               {messages.map((msg, i) => (
-                <MessageBubble key={msg.id ?? i} message={msg} />
+                <MessageBubble key={msg.id ?? i} message={msg} onHighlightDoc={handleHighlightDoc} />
               ))}
               {isTyping && (
                 <div className="typing-indicator">
@@ -119,18 +139,33 @@ export default function MessagingPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {orgDocs.map(doc => (
-                <div key={doc.id} className="card-hover" style={{ padding: '1rem', background: 'var(--color-bg-elevated)', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
-                  <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <RiFileTextLine style={{ color: 'var(--color-accent)' }} />
-                    {doc.title}
+              {orgDocs.map(doc => {
+                const isHighlighted = highlightedDocId === doc.id
+                return (
+                  <div 
+                    key={doc.id} 
+                    id={`doc-item-${doc.id}`}
+                    className={`card-hover ${isHighlighted ? 'doc-highlight-pulse' : ''}`} 
+                    style={{ 
+                      padding: '1rem', 
+                      background: 'var(--color-bg-elevated)', 
+                      borderRadius: '0.75rem', 
+                      border: isHighlighted ? '2px solid var(--color-accent)' : '1px solid var(--border-color)',
+                      transition: 'all 0.3s ease',
+                      boxShadow: isHighlighted ? '0 0 15px var(--color-accent-2)' : 'none'
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <RiFileTextLine style={{ color: 'var(--color-accent)' }} />
+                      {doc.title}
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{doc.department}</span>
+                      <span>{doc.fileType}</span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{doc.department}</span>
-                    <span>{doc.fileType}</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

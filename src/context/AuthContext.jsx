@@ -39,28 +39,33 @@ export function AuthProvider({ children }) {
         setLoading(false)
 
         // Real-time listener for user document (handles orgId updates)
-        userUnsub = onSnapshot(doc(db, 'users', firebaseUser.uid), async (docSnap) => {
+        userUnsub = onSnapshot(doc(db, 'users', firebaseUser.uid), (docSnap) => {
           if (docSnap.exists()) {
             setUser({ ...baseUser, ...docSnap.data() })
-            // Fetch agent once
-            const agentSnap = await getAgentDoc(firebaseUser.uid)
-            setAgent(agentSnap.exists() ? agentSnap.data() : null)
+          } else {
+             setUser(baseUser)
           }
+        })
+
+        // Real-time listener for agent doc
+        const agentUnsub = onSnapshot(doc(db, 'agents', firebaseUser.uid), (agentSnap) => {
+          setAgent(agentSnap.exists() ? agentSnap.data() : null)
         })
 
         // Real-time listener for org invites
         inviteUnsub = subscribeToOrgInvites(firebaseUser.email, setInvites)
-        
+
+        // Return a combined cleanup function
+        return () => {
+          if (userUnsub) userUnsub();
+          if (agentUnsub) agentUnsub();
+          if (inviteUnsub) inviteUnsub();
+        }
       } catch (err) {
         console.error('[AuthContext]', err)
         setError(err.message)
         setLoading(false)
       }
-      
-      // We must return a nested cleanup since subscribeToAuth is driving this.
-      // But we can't easily return it from an async callback.
-      // Better to attach it to a ref or just let it leak for the hackathon.
-      // Easiest is to overwrite a global or just accept the slight leak during dev since auth state rarely flips.
     })
     return unsub
   }, [])

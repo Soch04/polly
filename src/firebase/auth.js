@@ -12,7 +12,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
  * Create a new user account.
  * Triggers: creates User doc + Agent Record in Firestore.
  */
-export async function signUp({ email, password, displayName, department, role = 'member' }) {
+export async function signUp({ email, password, displayName, department = 'Unassigned', role = 'member' }) {
   const credential = await createUserWithEmailAndPassword(auth, email, password)
   const user = credential.user
 

@@ -15,6 +15,9 @@ export const getUserDoc = (uid) =>
 export const updateUserDoc = (uid, data) =>
   updateDoc(doc(db, 'users', uid), { ...data, updatedAt: serverTimestamp() })
 
+export const updateUserDepartment = (uid, department) =>
+  updateDoc(doc(db, 'users', uid), { department, updatedAt: serverTimestamp() })
+
 /**
  * Fetch the org directory (users matching specific orgId).
  * Used by the @mention autocomplete in MessageInput.
@@ -39,6 +42,9 @@ export const createOrganization = async (userId, name, userEmail) => {
   await updateUserDoc(userId, { orgId: orgDoc.id, orgRole: 'admin' })
   return orgDoc.id
 }
+
+export const updateOrgDepartments = (orgId, departments) =>
+  updateDoc(doc(db, 'organizations', orgId), { departments, updatedAt: serverTimestamp() })
 
 export const inviteUserToOrg = (orgId, email) =>
   updateDoc(doc(db, 'organizations', orgId), {
@@ -187,6 +193,19 @@ export const subscribeToUserMessages = (userId, callback) => {
 }
 
 /**
+ * Delete all personal messages for a user.
+ */
+export const clearUserMessages = (userId) => {
+  const q = query(collection(db, 'messages'), where('recipientId', '==', userId))
+  return getDocs(q).then(async snap => {
+    const { writeBatch } = await import('firebase/firestore')
+    const batch = writeBatch(db)
+    snap.docs.forEach(doc => batch.delete(doc.ref))
+    return batch.commit()
+  })
+}
+
+/**
  * Subscribe to bot-to-bot logs (optionally filtered by department)
  */
 export const subscribeToBotLogs = (department, callback) => {
@@ -329,3 +348,49 @@ export const markInteractionNotified = (interactionId) =>
   updateDoc(doc(db, 'agent_interactions', interactionId), {
     feed_notified: true
   })
+
+/**
+ * Global interactions listener for Admin Feed (Activity monitor)
+ */
+export const subscribeToAllOrgInteractions = (callback) => {
+  const q = query(
+    collection(db, 'agent_interactions'),
+    orderBy('timestamp', 'desc'),
+    limit(30)
+  )
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  }, () => callback([]))
+}
+
+/**
+ * System Sanitization (Admin Only)
+ * Prunes unauthorized accounts and purges all message history.
+ */
+export const runSystemSanitization = async () => {
+  const AUTHORIZED_EMAILS = ['ssquare@rock.org', 'pstar@rock.org', 'scheeks@rock.org'];
+  
+  // 1. Fetch Users
+  const usersSnap = await getDocs(collection(db, 'users'));
+  const allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const usersToDelete = allUsers.filter(u => !AUTHORIZED_EMAILS.includes(u.email));
+
+  const { writeBatch } = await import('firebase/firestore');
+  const batch = writeBatch(db);
+
+  // 2. Delete Users and Agents
+  usersToDelete.forEach(user => {
+    batch.delete(doc(db, 'users', user.id));
+    batch.delete(doc(db, 'agents', user.id));
+  });
+
+  // 3. Purge Messages
+  const messagesSnap = await getDocs(collection(db, 'messages'));
+  messagesSnap.docs.forEach(d => batch.delete(d.ref));
+
+  // 4. Purge Interactions
+  const interactionsSnap = await getDocs(collection(db, 'agent_interactions'));
+  interactionsSnap.docs.forEach(d => batch.delete(d.ref));
+
+  return batch.commit();
+}

@@ -28,13 +28,13 @@ function AuthRoute({ children }) {
 }
 
 /**
- * Guard that requires the user to be an admin.
- * Redirects non-admins to /messaging.
+ * Guard that requires the user to be an org admin.
+ * Redirects non-org-admins to /messaging.
  */
 function AdminRoute({ children }) {
-  const { isAdmin, loading } = useAuth()
+  const { isOrgAdmin, loading } = useAuth()
   if (loading) return null
-  return isAdmin ? children : <Navigate to="/messaging" replace />
+  return isOrgAdmin ? children : <Navigate to="/messaging" replace />
 }
 
 /**
