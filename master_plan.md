@@ -7,11 +7,13 @@
 
 ## 🎯 Project Overview
 
-**Project Borg** is a centralized, role-gated knowledge management platform that uses Retrieval-Augmented Generation (RAG) to eliminate the **'Coordination Tax'** in modern organizations. It enables both individuals and corporate teams to query a curated, organization-scoped vector database using natural language, replacing fragmented SaaS searches and manual document retrieval with a single conversational interface. 
+**Project Borg** is a dual-stack organizational knowledge platform that uses Retrieval-Augmented Generation (RAG) to eliminate the **‘Coordination Tax’** in modern organizations. Teams query a curated, org-scoped vector database conversationally — replacing fragmented document searches with a single grounded AI interface.
 
-Each organization owns an isolated Pinecone vector store, partitioned by `orgId`, and all data ingestion passes through an Admin approval workflow before reaching the shared index, ensuring the knowledge base remains clean and verified. The system is built on a React/Vite frontend with Firebase handling authentication and role-based access control, Google Gemini 2.5 Flash as the core LLM for query generation, and Pinecone as the vector store backend. 
+The platform operates across two services:
+- **Query layer** — React/Vite SPA: Firebase Auth, 5-stage RAG pipeline (intent classification → HyDE → Pinecone ANN → LLM re-ranking → citation block), Gemini 2.5 Flash with SSE streaming, and inter-agent messaging.
+- **Ingestion layer** — Python FastAPI (`user_input.py`): LangChain `SemanticChunker` + `RecursiveCharacterTextSplitter`, HuggingFace `all-mpnet-base-v2` (768-dim) embeddings, PDF/DOCX/TXT loaders, and direct Pinecone upsert with `is_approved: true` and org namespace metadata.
 
-The permission handshake between standard users and administrators is positioned as the core innovation — treating the vector database as a curated ledger of truth rather than an uncontrolled data dump. Multi-format ingestion supports PDF, DOCX, and raw text files, with modularity designed to allow future integrations with Google Drive or Notion. Project Borg targets a well-understood enterprise problem — knowledge fragmentation — and differentiates itself by sitting between generic enterprise search tools like SharePoint and unconstrained AI chat interfaces. The 24-hour execution plan is divided into clear 6-hour blocks with role-specific responsibilities assigned across a three-person team covering frontend, backend/IAM, and data/AI concerns.
+Each organization owns an isolated Pinecone namespace partitioned by `orgId`. The `is_approved: true` metadata flag is enforced as a server-side Pinecone filter on every query, ensuring only curated documents surface in agent responses.
 
 ---
 
@@ -138,9 +140,15 @@ Agent generates reply via generateAgentReply() → postMentionReply() closes the
 
 ### RAG Pipeline (Fully Implemented)
 
-**Ingestion** (`lib/rag.js`): Admin approves `orgData` doc in the Admin Dashboard → `ingestDocument()` triggers → content split via recursive character chunking (1,000 tokens, 200-token overlap) → embedded via Gemini `text-embedding-004` (768 dimensions) → upserted to Pinecone namespace scoped to `orgId` with mandatory metadata `{ is_approved: true, adminId, department, docId, title, ingestedAt }`.
+**Ingestion** (`user_input.py` — Python FastAPI): React DataUploader POSTs documents to `/api/upload` or `/api/text` → LangChain loads PDF/DOCX/TXT via PyPDFLoader/Docx2txtLoader/TextLoader → classified as structured vs unstructured via signal scoring → chunked via `SemanticChunker` (semantic boundary) or `RecursiveCharacterTextSplitter` (1,000ch / 100ch overlap) → embedded via HuggingFace `all-mpnet-base-v2` (768-dim) → upserted to Pinecone namespace scoped to `orgId` with metadata `{ is_approved: true, owner, org_id }`.
 
-**Query** (`hooks/useMessages.js`): User sends message → `queryKnowledgeBase(orgId, content, { is_approved: true, department? })` → Pinecone top-K=5 similarity search within org namespace → retrieved chunks injected into Gemini system prompt as `KNOWLEDGE BASE CONTEXT` → response grounded in approved documents only, with source citations returned to the UI.
+**Query** (`hooks/useMessages.js` — 5-stage browser pipeline):
+1. `classifyQuery()` — intent: FACTUAL / PROCEDURAL / ANALYTICAL / CONVERSATIONAL
+2. `generateHypotheticalDoc()` — HyDE: generates an answer-space document for embedding (Gao et al. 2022)
+3. `queryKnowledgeBase()` — Pinecone ANN top-K (4–8 by intent), `is_approved: true` server-side filter
+4. `rerankResults()` — Gemini cross-encoder scores each chunk 0–10, filters ≥6
+5. `buildCitationBlock()` — deduplication by docId, confidence scoring, 25,500-token budget trim
+6. `streamGemini()` — SSE streaming, tokens rendered progressively in MessageBubble
 
 **Source Citation UI**: Bot responses include clickable `[1] Document Title` citation badges that highlight and scroll to the relevant document in the Organization Knowledge Base panel.
 
@@ -219,7 +227,9 @@ The stack was chosen explicitly for hackathon velocity:
 | @mention autocomplete → A2A handshake → reply loop | ✅ Complete | `parseMentions.js`, `firestore.js` |
 | Autonomous agent reply with [CONFIDENT]/[ESCALATE] | ✅ Complete | `generateReply.js` |
 | Admin Dashboard: real-time stats from Firestore | ✅ Complete | `AdminDashboard.jsx` |
-| Admin KB approval → RAG ingestion → `is_approved` metadata | ✅ Complete | `AdminDashboard.jsx`, `lib/rag.js` |
+| Python FastAPI ingestion server (`user_input.py`) | ✅ Complete | `user_input.py`, `/api/upload`, `/api/text` |
+| LangChain SemanticChunker + RecursiveTextSplitter | ✅ Complete | `user_input.py` |
+| Pinecone namespace-per-org with `is_approved:true` filter | ✅ Complete | `lib/rag.js` |
 | Multi-tenant Organizations (create/join/invite) | ✅ Complete | `OrgPage.jsx`, `firestore.js` |
 | Role-based access control (global admin + org admin) | ✅ Complete | `AuthContext.jsx`, Firestore Security Rules |
 | Dark mode with Firestore + localStorage persistence | ✅ Complete | `AuthContext.jsx`, `index.css` |
