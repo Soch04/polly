@@ -2,9 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { USE_MOCK, ENABLE_INTERNAL_MONOLOGUE } from '../context/AppConfig'
 import { MOCK_MESSAGES } from '../data/mockData'
+import { useApp } from '../context/AppContext'
 import {
   sendUserMessage, sendBotMessage, subscribeToUserMessages, sendMention,
+  getOrgDirectory, clearUserMessages,
 } from '../firebase/firestore'
+import { collection, getDocs, query, where } from 'firebase/firestore'
+import { db } from '../firebase/config'
 import { callGemini } from '../agent/gemini'
 import {
   buildSystemPrompt,
@@ -15,10 +19,12 @@ import {
   parseMessageAgentCommand,
 } from '../agent/buildPrompt'
 import { extractMentionedEmails, stripMentions, hasMention } from '../utils/parseMentions'
-import { getOrgDirectory } from '../firebase/firestore'
+import { queryKnowledgeBase } from '../lib/rag'
+// getOrgDirectory already imported above
 
 export function useMessages() {
   const { user, agent } = useAuth()
+  const { addToast } = useApp()
   const [messages,   setMessages]   = useState([])
   const [isTyping,   setIsTyping]   = useState(false)
   const [isSending,  setIsSending]  = useState(false)
@@ -48,6 +54,7 @@ export function useMessages() {
   const sendMessage = async (content, mentions = []) => {
     if (!content.trim() || isSending) return
     setIsSending(true)
+    let messageCitations = []
 
     const userMsg = {
       id:         `tmp-${Date.now()}`,
@@ -69,13 +76,38 @@ export function useMessages() {
 
     // Fetch directory for prompt injection and email resolution
     let directory = []
+    // Fetch approved org knowledge base docs for RAG context
+    let kbContext = ''
     if (!USE_MOCK) {
-      directory = await getOrgDirectory()
+      directory = await getOrgDirectory(user?.orgId)
+
+      // Build RAG context from Pinecone (Only approved docs for this org/department)
+      if (user?.orgId) {
+        try {
+          const filters = { is_approved: true }
+          if (user.department && user.department !== 'Unassigned') {
+             filters.department = user.department
+          }
+
+          const results = await queryKnowledgeBase(user.orgId, content, filters)
+          
+          if (results.length > 0) {
+            kbContext = results
+              .map(r => `### DOCUMENT: ${r.title} (ID: ${r.docId})\n${r.text}`)
+              .join('\n\n')
+            
+            // Store results in a temp variable to attach as metadata to the bot message later
+            messageCitations = results.map(r => ({ id: r.docId, title: r.title }))
+          }
+        } catch (kbErr) {
+          console.warn('[Borg] Failed to query vector knowledge base:', kbErr)
+        }
+      }
     }
 
     try {
       // ── Build prompt ──────────────────────────────────────
-      const systemPrompt = buildSystemPrompt(user, agent, '', directory)
+      const systemPrompt = buildSystemPrompt(user, agent, kbContext, directory)
       const complex      = isComplexRequest(content)
       const fullPrompt   = (complex && ENABLE_INTERNAL_MONOLOGUE)
         ? systemPrompt + '\n\n' + buildMonologuePrompt()
@@ -169,6 +201,7 @@ export function useMessages() {
           execution: parsed.execution,
         } : null,
         timestamp:   new Date(),
+        citations:   messageCitations,
       }
 
       setMessages(prev => [...prev, botMsg])
@@ -241,7 +274,21 @@ export function useMessages() {
     }
   }
 
-  return { messages, isTyping, isSending, sendMessage }
+  const handleClearChat = async () => {
+    if (!window.confirm('Are you sure you want to clear your chat history? This cannot be undone.')) return
+    try {
+      if (!USE_MOCK && user?.uid) {
+        await clearUserMessages(user.uid)
+      }
+      setMessages([])
+      historyRef.current = []
+      addToast('Chat history cleared', 'success')
+    } catch (err) {
+      addToast('Failed to clear chat', 'error')
+    }
+  }
+
+  return { messages, isTyping, isSending, sendMessage, clearChat: handleClearChat }
 }
 
 // ── Fallback mock response (used when VITE_USE_MOCK=true) ────

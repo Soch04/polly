@@ -1,6 +1,7 @@
 import {
   collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
   query, where, orderBy, limit, onSnapshot, serverTimestamp,
+  arrayUnion, arrayRemove
 } from 'firebase/firestore'
 import { db } from './config'
 
@@ -14,13 +15,72 @@ export const getUserDoc = (uid) =>
 export const updateUserDoc = (uid, data) =>
   updateDoc(doc(db, 'users', uid), { ...data, updatedAt: serverTimestamp() })
 
+export const updateUserDepartment = (uid, department) =>
+  updateDoc(doc(db, 'users', uid), { department, updatedAt: serverTimestamp() })
+
 /**
- * Fetch the full org directory (all user docs).
+ * Fetch the org directory (users matching specific orgId).
  * Used by the @mention autocomplete in MessageInput.
- * @returns {Promise<object[]>}
  */
-export const getOrgDirectory = () =>
-  getDocs(collection(db, 'users')).then(snap => snap.docs.map(d => d.data()))
+export const getOrgDirectory = (orgId) => {
+  if (!orgId) return Promise.resolve([])
+  const q = query(collection(db, 'users'), where('orgId', '==', orgId))
+  return getDocs(q).then(snap => snap.docs.map(d => d.data()))
+}
+
+// ══════════════════════════════════════════════════════════
+// ORGANIZATIONS & INVITES
+// ══════════════════════════════════════════════════════════
+
+export const createOrganization = async (userId, name, userEmail) => {
+  const orgDoc = await addDoc(collection(db, 'organizations'), {
+    name,
+    ownerId: userId,
+    invites: [],
+    createdAt: serverTimestamp(),
+  })
+  await updateUserDoc(userId, { orgId: orgDoc.id, orgRole: 'admin' })
+  return orgDoc.id
+}
+
+export const updateOrgDepartments = (orgId, departments) =>
+  updateDoc(doc(db, 'organizations', orgId), { departments, updatedAt: serverTimestamp() })
+
+export const inviteUserToOrg = (orgId, email) =>
+  updateDoc(doc(db, 'organizations', orgId), {
+    invites: arrayUnion(email.toLowerCase().trim())
+  })
+
+export const joinOrganization = async (orgId, userId, email) => {
+  await updateUserDoc(userId, { orgId, orgRole: 'member' })
+  await updateDoc(doc(db, 'organizations', orgId), {
+    invites: arrayRemove(email.toLowerCase().trim())
+  })
+}
+
+export const subscribeToOrgInvites = (email, callback) => {
+  if (!email) return () => callback([])
+  const q = query(
+    collection(db, 'organizations'),
+    where('invites', 'array-contains', email.toLowerCase().trim())
+  )
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  }, () => callback([]))
+}
+
+export const getOrgMembers = (orgId) => {
+  if (!orgId) return Promise.resolve([])
+  const q = query(collection(db, 'users'), where('orgId', '==', orgId))
+  return getDocs(q).then(snap => snap.docs.map(d => d.data()))
+}
+
+export const subscribeToOrganization = (orgId, callback) => {
+  if (!orgId) return () => callback(null)
+  return onSnapshot(doc(db, 'organizations', orgId), (d) => {
+    callback(d.exists() ? { id: d.id, ...d.data() } : null)
+  })
+}
 
 // ══════════════════════════════════════════════════════════
 // AGENTS
@@ -133,6 +193,19 @@ export const subscribeToUserMessages = (userId, callback) => {
 }
 
 /**
+ * Delete all personal messages for a user.
+ */
+export const clearUserMessages = (userId) => {
+  const q = query(collection(db, 'messages'), where('recipientId', '==', userId))
+  return getDocs(q).then(async snap => {
+    const { writeBatch } = await import('firebase/firestore')
+    const batch = writeBatch(db)
+    snap.docs.forEach(doc => batch.delete(doc.ref))
+    return batch.commit()
+  })
+}
+
+/**
  * Subscribe to bot-to-bot logs (optionally filtered by department)
  */
 export const subscribeToBotLogs = (department, callback) => {
@@ -158,14 +231,15 @@ export const subscribeToBotLogs = (department, callback) => {
 }
 
 // ══════════════════════════════════════════════════════════
-// ORG DATA (Knowledge Base)
-// Schema: { id, title, content, fileUrl, fileType,
+// ORG DATA (Knowledge Base / RAG data)
+// Schema: { id, orgId, title, content, fileUrl, fileType,
 //           uploadedBy, department, status, createdAt }
 // ══════════════════════════════════════════════════════════
 
-export const submitOrgData = (userId, userName, data) =>
+export const submitOrgData = (userId, userName, orgId, data) =>
   addDoc(collection(db, 'orgData'), {
     ...data,
+    orgId,
     uploadedBy:   userId,
     uploaderName: userName,
     status:       'pending',   // 'pending' | 'approved' | 'rejected'
@@ -176,17 +250,24 @@ export const submitOrgData = (userId, userName, data) =>
 export const updateOrgDataStatus = (docId, status) =>
   updateDoc(doc(db, 'orgData', docId), { status, updatedAt: serverTimestamp() })
 
-export const subscribeToOrgData = (callback) => {
-  const q = query(collection(db, 'orgData'), orderBy('createdAt', 'desc'))
+export const subscribeToOrgData = (orgId, callback) => {
+  if (!orgId) return () => callback([])
+  const q = query(
+    collection(db, 'orgData'), 
+    where('orgId', '==', orgId),
+    orderBy('createdAt', 'desc')
+  )
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
   })
 }
 
-export const subscribeToUserOrgData = (userId, callback) => {
+export const subscribeToUserOrgData = (userId, orgId, callback) => {
+  if (!orgId) return () => callback([])
   const q = query(
     collection(db, 'orgData'),
     where('uploadedBy', '==', userId),
+    where('orgId', '==', orgId),
     orderBy('createdAt', 'desc'),
   )
   return onSnapshot(q, (snap) => {
@@ -267,3 +348,49 @@ export const markInteractionNotified = (interactionId) =>
   updateDoc(doc(db, 'agent_interactions', interactionId), {
     feed_notified: true
   })
+
+/**
+ * Global interactions listener for Admin Feed (Activity monitor)
+ */
+export const subscribeToAllOrgInteractions = (callback) => {
+  const q = query(
+    collection(db, 'agent_interactions'),
+    orderBy('timestamp', 'desc'),
+    limit(30)
+  )
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  }, () => callback([]))
+}
+
+/**
+ * System Sanitization (Admin Only)
+ * Prunes unauthorized accounts and purges all message history.
+ */
+export const runSystemSanitization = async () => {
+  const AUTHORIZED_EMAILS = ['ssquare@rock.org', 'pstar@rock.org', 'scheeks@rock.org'];
+  
+  // 1. Fetch Users
+  const usersSnap = await getDocs(collection(db, 'users'));
+  const allUsers = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const usersToDelete = allUsers.filter(u => !AUTHORIZED_EMAILS.includes(u.email));
+
+  const { writeBatch } = await import('firebase/firestore');
+  const batch = writeBatch(db);
+
+  // 2. Delete Users and Agents
+  usersToDelete.forEach(user => {
+    batch.delete(doc(db, 'users', user.id));
+    batch.delete(doc(db, 'agents', user.id));
+  });
+
+  // 3. Purge Messages
+  const messagesSnap = await getDocs(collection(db, 'messages'));
+  messagesSnap.docs.forEach(d => batch.delete(d.ref));
+
+  // 4. Purge Interactions
+  const interactionsSnap = await getDocs(collection(db, 'agent_interactions'));
+  interactionsSnap.docs.forEach(d => batch.delete(d.ref));
+
+  return batch.commit();
+}
