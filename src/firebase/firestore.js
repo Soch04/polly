@@ -1,7 +1,7 @@
 import {
   collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
   query, where, orderBy, limit, onSnapshot, serverTimestamp,
-  arrayUnion, arrayRemove
+  arrayUnion, arrayRemove, writeBatch
 } from 'firebase/firestore'
 import { db } from './config'
 
@@ -239,14 +239,31 @@ export const subscribeToUserMessages = (userId, callback) => {
 /**
  * Delete all personal messages for a user.
  */
-export const clearUserMessages = (userId) => {
-  const q = query(collection(db, 'messages'), where('recipientId', '==', userId))
-  return getDocs(q).then(async snap => {
-    const { writeBatch } = await import('firebase/firestore')
+export const clearUserMessages = async (userId) => {
+  // Query both sides: messages where this user is recipient OR sender
+  const [recipSnap, senderSnap] = await Promise.all([
+    getDocs(query(collection(db, 'messages'), where('recipientId', '==', userId))),
+    getDocs(query(collection(db, 'messages'), where('senderId',    '==', userId))),
+  ])
+
+  // Deduplicate by document ID (a message could match both queries)
+  const seen = new Set()
+  const allDocs = []
+  for (const snap of [recipSnap, senderSnap]) {
+    for (const d of snap.docs) {
+      if (!seen.has(d.id)) { seen.add(d.id); allDocs.push(d) }
+    }
+  }
+
+  if (allDocs.length === 0) return
+
+  // Firestore writeBatch limit is 500 operations — chunk if needed
+  const CHUNK = 500
+  for (let i = 0; i < allDocs.length; i += CHUNK) {
     const batch = writeBatch(db)
-    snap.docs.forEach(doc => batch.delete(doc.ref))
-    return batch.commit()
-  })
+    allDocs.slice(i, i + CHUNK).forEach(d => batch.delete(d.ref))
+    await batch.commit()
+  }
 }
 
 /**

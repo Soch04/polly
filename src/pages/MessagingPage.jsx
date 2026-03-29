@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom'
 import { subscribeToOrgData } from '../firebase/firestore'
 import MessageBubble from '../components/messaging/MessageBubble'
 import MessageInput from '../components/messaging/MessageInput'
-import { RiRobot2Line, RiMessage3Line, RiFileTextLine, RiSearchEyeLine } from 'react-icons/ri'
+import { RiRobot2Line, RiFileTextLine, RiSearchEyeLine, RiDeleteBinLine } from 'react-icons/ri'
 import './MessagingPage.css'
 
 export default function MessagingPage() {
@@ -96,9 +96,14 @@ export default function MessagingPage() {
             <div className="msg-feed" ref={feedRef} role="log" aria-live="polite">
               {messages.length === 0 && (
                 <div className="empty-state">
-                  <div className="empty-state-icon">🧠</div>
-                  <h3>Query your Organization</h3>
-                  <p>I have access to all {orgDocs.length} indexed documents. What do you want to know?</p>
+                  {!user?.orgId ? (
+                    <>
+                      <h3>Query your Organization</h3>
+                      <p>Join or create an organization to message your agent.</p>
+                    </>
+                  ) : (
+                    <h3>Query your Organization</h3>
+                  )}
                 </div>
               )}
               {messages.map((msg, i) => (
