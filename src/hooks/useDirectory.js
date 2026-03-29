@@ -10,10 +10,11 @@ import { MOCK_ALL_AGENTS } from '../data/mockData'
 
 // Module-level cache so it survives component re-mounts within a session
 let _cache = null
+let _cacheOrgId = null // track the orgId cached
 
-export function useDirectory() {
-  const [members, setMembers] = useState(_cache ?? [])
-  const [loading, setLoading] = useState(!_cache)
+export function useDirectory(orgId) {
+  const [members, setMembers] = useState((_cacheOrgId === orgId && _cache) ? _cache : [])
+  const [loading, setLoading] = useState(true)
   const fetched = useRef(!!_cache)
 
   useEffect(() => {
@@ -29,12 +30,19 @@ export function useDirectory() {
         avatar:      a.displayName?.[0]?.toUpperCase() ?? '?',
       }))
       _cache = mockDir
+      _cacheOrgId = orgId
       setMembers(mockDir)
       setLoading(false)
       return
     }
 
-    getOrgDirectory()
+    if (!orgId) {
+       setMembers([])
+       setLoading(false)
+       return
+    }
+
+    getOrgDirectory(orgId)
       .then(docs => {
         const dir = docs.map(d => ({
           uid:         d.uid,
@@ -43,12 +51,12 @@ export function useDirectory() {
           department:  d.department ?? '',
           avatar:      (d.displayName ?? d.email)?.[0]?.toUpperCase() ?? '?',
         }))
-        _cache = dir
+        _cacheOrgId = orgId
         setMembers(dir)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [orgId])
 
   /** Filter members by a partial name/email query (case-insensitive) */
   const search = (query) => {

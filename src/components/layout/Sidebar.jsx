@@ -10,9 +10,8 @@ import {
 import './Sidebar.css'
 
 const baseNavItems = [
-  // { to: '/messaging',    icon: RiMessage3Line, label: 'Messaging' }, // Hidden temporarily
+  { to: '/messaging',    icon: RiMessage3Line, label: 'Query RAG' },
   { to: '/bot-settings', icon: RiRobot2Line,   label: 'My Agent' },
-  { to: '/user-input',   icon: RiDatabase2Line, label: 'My Data' },
   { to: '/profile',      icon: RiUser3Line,    label: 'Profile' },
   { to: '/org',          icon: RiBuildingLine, label: 'Organization', hidden: HIDE_ORG_DATA_UI },
 ]

@@ -4,7 +4,10 @@ import { USE_MOCK, ENABLE_INTERNAL_MONOLOGUE } from '../context/AppConfig'
 import { MOCK_MESSAGES } from '../data/mockData'
 import {
   sendUserMessage, sendBotMessage, subscribeToUserMessages, sendMention,
+  getOrgDirectory,
 } from '../firebase/firestore'
+import { collection, getDocs, query, where } from 'firebase/firestore'
+import { db } from '../firebase/config'
 import { callGemini } from '../agent/gemini'
 import {
   buildSystemPrompt,
@@ -15,7 +18,7 @@ import {
   parseMessageAgentCommand,
 } from '../agent/buildPrompt'
 import { extractMentionedEmails, stripMentions, hasMention } from '../utils/parseMentions'
-import { getOrgDirectory } from '../firebase/firestore'
+// getOrgDirectory already imported above
 
 export function useMessages() {
   const { user, agent } = useAuth()
@@ -69,13 +72,32 @@ export function useMessages() {
 
     // Fetch directory for prompt injection and email resolution
     let directory = []
+    // Fetch approved org knowledge base docs for RAG context
+    let kbContext = ''
     if (!USE_MOCK) {
-      directory = await getOrgDirectory()
+      directory = await getOrgDirectory(user?.orgId)
+
+      // Build RAG context from approved orgData docs
+      if (user?.orgId) {
+        try {
+          const orgDataRef = collection(db, 'orgData')
+          const orgDataQ   = query(orgDataRef, where('orgId', '==', user.orgId))
+          const snap       = await getDocs(orgDataQ)
+          const docs       = snap.docs.map(d => d.data())
+          if (docs.length > 0) {
+            kbContext = docs
+              .map(d => `### ${d.title}\n${d.content}`)
+              .join('\n\n')
+          }
+        } catch (kbErr) {
+          console.warn('[Borg] Failed to fetch org knowledge base:', kbErr)
+        }
+      }
     }
 
     try {
       // ── Build prompt ──────────────────────────────────────
-      const systemPrompt = buildSystemPrompt(user, agent, '', directory)
+      const systemPrompt = buildSystemPrompt(user, agent, kbContext, directory)
       const complex      = isComplexRequest(content)
       const fullPrompt   = (complex && ENABLE_INTERNAL_MONOLOGUE)
         ? systemPrompt + '\n\n' + buildMonologuePrompt()

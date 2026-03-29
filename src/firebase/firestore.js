@@ -1,6 +1,7 @@
 import {
   collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
   query, where, orderBy, limit, onSnapshot, serverTimestamp,
+  arrayUnion, arrayRemove
 } from 'firebase/firestore'
 import { db } from './config'
 
@@ -15,12 +16,65 @@ export const updateUserDoc = (uid, data) =>
   updateDoc(doc(db, 'users', uid), { ...data, updatedAt: serverTimestamp() })
 
 /**
- * Fetch the full org directory (all user docs).
+ * Fetch the org directory (users matching specific orgId).
  * Used by the @mention autocomplete in MessageInput.
- * @returns {Promise<object[]>}
  */
-export const getOrgDirectory = () =>
-  getDocs(collection(db, 'users')).then(snap => snap.docs.map(d => d.data()))
+export const getOrgDirectory = (orgId) => {
+  if (!orgId) return Promise.resolve([])
+  const q = query(collection(db, 'users'), where('orgId', '==', orgId))
+  return getDocs(q).then(snap => snap.docs.map(d => d.data()))
+}
+
+// ══════════════════════════════════════════════════════════
+// ORGANIZATIONS & INVITES
+// ══════════════════════════════════════════════════════════
+
+export const createOrganization = async (userId, name, userEmail) => {
+  const orgDoc = await addDoc(collection(db, 'organizations'), {
+    name,
+    ownerId: userId,
+    invites: [],
+    createdAt: serverTimestamp(),
+  })
+  await updateUserDoc(userId, { orgId: orgDoc.id, orgRole: 'admin' })
+  return orgDoc.id
+}
+
+export const inviteUserToOrg = (orgId, email) =>
+  updateDoc(doc(db, 'organizations', orgId), {
+    invites: arrayUnion(email.toLowerCase().trim())
+  })
+
+export const joinOrganization = async (orgId, userId, email) => {
+  await updateUserDoc(userId, { orgId, orgRole: 'member' })
+  await updateDoc(doc(db, 'organizations', orgId), {
+    invites: arrayRemove(email.toLowerCase().trim())
+  })
+}
+
+export const subscribeToOrgInvites = (email, callback) => {
+  if (!email) return () => callback([])
+  const q = query(
+    collection(db, 'organizations'),
+    where('invites', 'array-contains', email.toLowerCase().trim())
+  )
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  }, () => callback([]))
+}
+
+export const getOrgMembers = (orgId) => {
+  if (!orgId) return Promise.resolve([])
+  const q = query(collection(db, 'users'), where('orgId', '==', orgId))
+  return getDocs(q).then(snap => snap.docs.map(d => d.data()))
+}
+
+export const subscribeToOrganization = (orgId, callback) => {
+  if (!orgId) return () => callback(null)
+  return onSnapshot(doc(db, 'organizations', orgId), (d) => {
+    callback(d.exists() ? { id: d.id, ...d.data() } : null)
+  })
+}
 
 // ══════════════════════════════════════════════════════════
 // AGENTS
@@ -158,14 +212,15 @@ export const subscribeToBotLogs = (department, callback) => {
 }
 
 // ══════════════════════════════════════════════════════════
-// ORG DATA (Knowledge Base)
-// Schema: { id, title, content, fileUrl, fileType,
+// ORG DATA (Knowledge Base / RAG data)
+// Schema: { id, orgId, title, content, fileUrl, fileType,
 //           uploadedBy, department, status, createdAt }
 // ══════════════════════════════════════════════════════════
 
-export const submitOrgData = (userId, userName, data) =>
+export const submitOrgData = (userId, userName, orgId, data) =>
   addDoc(collection(db, 'orgData'), {
     ...data,
+    orgId,
     uploadedBy:   userId,
     uploaderName: userName,
     status:       'pending',   // 'pending' | 'approved' | 'rejected'
@@ -176,17 +231,24 @@ export const submitOrgData = (userId, userName, data) =>
 export const updateOrgDataStatus = (docId, status) =>
   updateDoc(doc(db, 'orgData', docId), { status, updatedAt: serverTimestamp() })
 
-export const subscribeToOrgData = (callback) => {
-  const q = query(collection(db, 'orgData'), orderBy('createdAt', 'desc'))
+export const subscribeToOrgData = (orgId, callback) => {
+  if (!orgId) return () => callback([])
+  const q = query(
+    collection(db, 'orgData'), 
+    where('orgId', '==', orgId),
+    orderBy('createdAt', 'desc')
+  )
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
   })
 }
 
-export const subscribeToUserOrgData = (userId, callback) => {
+export const subscribeToUserOrgData = (userId, orgId, callback) => {
+  if (!orgId) return () => callback([])
   const q = query(
     collection(db, 'orgData'),
     where('uploadedBy', '==', userId),
+    where('orgId', '==', orgId),
     orderBy('createdAt', 'desc'),
   )
   return onSnapshot(q, (snap) => {

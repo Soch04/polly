@@ -8,7 +8,6 @@ import AuthPage        from './pages/AuthPage'
 import MessagingPage   from './pages/MessagingPage'
 import ProfilePage     from './pages/ProfilePage'
 import BotSettingsPage from './pages/BotSettingsPage'
-import UserInputPage   from './pages/UserInputPage'
 import OrgPage         from './pages/OrgPage'
 import AdminDashboard  from './pages/AdminDashboard'
 
@@ -30,12 +29,12 @@ function AuthRoute({ children }) {
 
 /**
  * Guard that requires the user to be an admin.
- * Redirects non-admins to /bot-settings.
+ * Redirects non-admins to /messaging.
  */
 function AdminRoute({ children }) {
   const { isAdmin, loading } = useAuth()
   if (loading) return null
-  return isAdmin ? children : <Navigate to="/bot-settings" replace />
+  return isAdmin ? children : <Navigate to="/messaging" replace />
 }
 
 /**
@@ -49,7 +48,7 @@ function AppRoutes() {
         <Route path="/auth" element={<AuthPage />} />
 
         {/* Root redirect */}
-        <Route path="/" element={<Navigate to="/bot-settings" replace />} />
+        <Route path="/" element={<Navigate to="/messaging" replace />} />
 
         {/* Authenticated routes */}
         <Route
@@ -64,10 +63,7 @@ function AppRoutes() {
           path="/bot-settings"
           element={<AuthRoute><Layout><BotSettingsPage /></Layout></AuthRoute>}
         />
-        <Route
-          path="/user-input"
-          element={<AuthRoute><Layout><UserInputPage /></Layout></AuthRoute>}
-        />
+
         <Route
           path="/org"
           element={<AuthRoute><Layout><OrgPage /></Layout></AuthRoute>}
@@ -86,7 +82,7 @@ function AppRoutes() {
         />
 
         {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/bot-settings" replace />} />
+        <Route path="*" element={<Navigate to="/messaging" replace />} />
       </Routes>
     </BrowserRouter>
   )
