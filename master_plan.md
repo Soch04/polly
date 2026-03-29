@@ -1,61 +1,59 @@
 # Master Plan: Project Borg
 
 ## 1. Vision Clarity
-**North Star:** Project Borg is a revolutionary AI agent network that eliminates the friction of human-to-human coordination in organizations. Our compelling direction is to create a "Post-Communication" workspace where employees focus entirely on high-value creative and strategic work, while their dedicated AI proxies handle all "glue work" (scheduling, information retrieval, cross-departmental updates, and routine inquiries). In our ecosystem, you do not "send an email" or "ping someone on Slack"; you express an intent, and your agent autonomously negotiates the outcome with relevant peer agents.
+**North Star:** Project Borg is a centralized data-sharing web application that eliminates time wasted on manual organizational data retrieval. Our compelling direction is to transform fragmented silos into a single, shared source of truth using a unified vector database per "Organization". By leveraging Retrieval-Augmented Generation (RAG), both individual contributors and entire corporate divisions can instantaneously query collective intelligence. 
 
 ## 2. Technical Depth
-The system utilizes a distributed agent architecture built on a modern, robust tech stack:
-- **Frontend:** React with Vite, styled with custom CSS for a premium, dynamic interface.
-- **Authentication & Backend:** Firebase for secure user management and real-time database capabilities.
-- **RAG Pipeline (Tier 2/Org Data):** Pinecone vector database combined with Google Generative AI embeddings for deep organizational knowledge retrieval.
-- **Core Intelligence (Tier 3):** Gemini 2.0 Flash / Pro models driving the reasoning, logic, and agentic planning engines.
-- **Data Model:** A four-tier architecture separating Private User Data (Tier 1), Global Org Data (Tier 2), Core Intel (Tier 3), and Inter-Agent state (Tier 4).
+Borg operates on a robust, role-gated RAG architecture:
+- **Frontend & Auth:** React/Vite paired with Firebase for strict Identity and Access Management (IAM).
+- **Organization-Bound Vector Stores:** A highly partitioned Pinecone architecture where each "Organization" owns an isolated embedded database.
+- **Multi-Format Ingestion:** Parsers built to handle `.pdf`, `.docx`, and raw text uploads via the "My Data" ingestion pipeline.
+- **Core Intelligence:** Standardized routing of user queries through Google Gemini 2.5 Flash ensures consistent, high-speed responses securely grounded in the shared index.
 
 ## 3. Innovation
-Unlike traditional Retrieval-Augmented Generation (RAG) chatbots that simply answer questions, Borg agents act as **Autonomous Proxies**. 
-- **Novel Approach:** The system operates on a "User-to-Bot Only" constraint. It treats the organization as a programmable network rather than a chaotic chat room.
-- **Beyond Tutorials:** Rather than a simple ChatGPT wrapper, Borg implements a multi-agent orchestration layer where AI agents proactively monitor "Inter-Agent Intelligence" and negotiate outcomes with each other without human intervention.
+Unlike unstructured team chat tools or "wild west" AI interfaces where any user can pollute the context window, Borg champions a **Curated RAG** approach. 
+- **Novel Approach:** By introducing an explicit permission handshake between Users and Administrators for data ingestion, the vector database acts as a verified ledger of truth rather than a chaotic dump of outdated files. 
 
 ## 4. Feasibility
-To execute this ambitious vision within 24 hours, the scope is tightly managed:
-- **Hours 0-6:** Firebase Auth setup, core API integration, and Pinecone RAG Pipeline for organizational data.
-- **Hours 6-12:** Multi-agent interaction loop using Gemini models via `@google/generative-ai`.
-- **Hours 12-18:** Frontend implementation including specific interactive views (`ProfilePage`, `MessagingPage`, `BotSettingsPage`).
-- **Hours 18-24:** Final testing of Live Negotiation logic, robust error handling, documentation, and live deployment.
+The execution strategy for the 24-hour development cycle:
+- **Hours 0-6:** Scaffold React/Vite frontend, initialize Firebase Auth, and set up Organization vs. User data structures.
+- **Hours 6-12:** Build the Multi-Format Data Ingestion pipeline (`.pdf`, `.docx`, text) and integrate Pinecone uploading via "My Data".
+- **Hours 12-18:** Implement the Upload Permission Handshake logic (Users request -> Admins approve) and integrate Gemini 2.5 Flash for RAG querying.
+- **Hours 18-24:** Final UI optimization, testing authorization edge cases, and deployment.
 
 ## 5. Scalability Design
-- **Architecture Beyond Demo:** While the hackathon prototype runs centralized, the conceptual architecture uses horizontal scaling where each user's proxy bot is isolated.
-- **Compute Efficiency:** Intelligent routing uses Gemini Flash for fast, low-cost API sorting, delegating only complex synthesis to Gemini Pro.
-- **Decentralization:** As the network grows, Inter-Agent communication will migrate from a central pub-sub to a federated, decentralized mesh.
+- **Architecture Beyond Demo:** Utilizing `orgId` metadata filtering allows a single Pinecone index to securely serve thousands of distinct corporate organizations (horizontally scalable SaaS model).
+- **Compute Efficiency:** Anchoring all operations to the Gemini 2.5 Flash model drives high performance at minimal API cost overhead compared to heavier legacy models.
 
 ## 6. Ecosystem Thinking
-Borg is designed as an API-first enterprise "System 1".
-- **Interoperability:** Architecture incorporates secure webhooks and modular integration layers to eventually connect with Google Workspace, Slack, and Jira.
-- **Extensibility:** The standard JSON-based "Agent Handshake API" protocol allows third-party customized bots to securely join the internal network and query authorized data.
+- **Interoperability:** The file ingestion pipeline is modular, allowing easy future extensions for `.csv`, markdown, or direct Google Drive/Notion sync integrations.
+- **Data Governance:** The rigid Admin/User upload handshake creates easily auditable logs for compliance and enterprise extension requirements.
 
 ## 7. Problem Definition
-The modern workforce is crippled by the "Coordination Tax" and "Hyper-Communication Fatigue."
-- **Specific Problem:** Knowledge workers spend up to 60% of their day on "work about work" (sync meetings, searching scattered knowledge bases, clarifying simple requests).
-- **Who Experiences It:** Project managers, executives, and cross-functional individual contributors who are constantly interrupted by notifications and unstructured requests.
+The "Coordination Tax" is crippling modern productivity.
+- **Specific Problem:** Individual and corporate users lose significant daily cycles searching across multiple SaaS platforms, trying to retrieve verifying specific documents, procedures, or domain data manually.
+- **Who Experiences It:** Corporate teams lacking a centralized knowledge base, and individuals who struggle to synthesize large batches of local file formats quickly.
 
 ## 8. User Impact
-- **Quantitative Benefit:** Reclaims an estimated 15-20 hours per week per employee by automating low-level coordination tasks.
-- **Qualitative Improvement:** Shifts company culture from "constant responsiveness" to "deep work and output." Reduces human error in information retrieval through precise, centralized Org RAG. 
+- **Quantitative Benefit:** Reduces data retrieval times from hours to seconds by converting exhaustive manual deep-dives into direct conversational queries.
+- **Qualitative Benefit (Value Proposition):** 
+  - *Individuals* can instantly parse heavy reports and distill answers directly via the "My Data" module.
+  - *Corporate Users* gain a trusted, hallucination-resistant oracle strictly curated by their own administrators.
 
 ## 9. Market Awareness
-- **Competitive Landscape:** Prevailing tools like Slack or Microsoft Teams provide the pipes but require human effort to pump the data. Traditional "AI Assistants" (like Copilot) assist individual tasks but don't manage the organizational network.
-- **Positioning:** Borg sits above the communication noise layer. It is not an alternative to email—it is the replacement of manual organizational coordination logic.
+- **Competitive Landscape:** Generic enterprise search (SharePoint) relies on brittle keyword matching. Solo AI platforms lack organizational visibility.
+- **Positioning:** Borg holds the middle ground: it provides ChatGPT-level conversational fluency, but explicitly anchors generation within a highly curated, organizationally shared truth boundary.
 
 ## 10. Team Execution Plan
-- **Backend/AI Lead:** Implements Pinecone RAG pipelines, Google Generative AI integration (`src/lib/rag.js`), and inter-agent logic.
-- **Frontend UI Lead:** Develops premium, responsive interfaces in React/Vite (`src/pages/*`) focusing on a seamless User-to-Proxy experience.
-- **Systems/Integration:** Manages Firebase auth (`src/firebase/auth.js`), database configurations, environment setup, and conducts integration testing of the scheduling negotiation loops.
+- **Data/AI Lead:** Integrates file-parsing libraries (`.pdf`, `.docx`), manages Pinecone vector mappings, and tunes Gemini 2.5 Flash query logic.
+- **Frontend Lead:** Builds the "My Data" interface, Organization creation flows, and the conversational UI.
+- **Backend/IAM Lead:** Engineers the exact User/Admin permission handshake in Firebase to control the upload request/approval state machine.
 
 ## 11. Risk Assessment
-- **Risk:** Agent Looping (bots caught in an endless negotiation loop).
-  - *Contingency:* Implement strict Time-To-Live (TTL) tokens on inter-agent requests and a cost-ceiling circuit breaker per negotiation.
-- **Risk:** Privacy leakage between private user data (Tier 1) and global org data (Tier 2).
-  - *Contingency:* Strict context-injection boundaries in prompt engineering and database-level RBAC partitioning.
+- **Risk:** Database Pollution leading to hallucinations.
+  - *Contingency:* The explicit permission handshake blocks Standard Users from directly writing to the vector index. All standard uploads are placed in a "pending approval" state queue.
+- **Risk:** Cross-Organizational Data Bleed.
+  - *Contingency:* Firebase RBAC rules paired with strict `namespace` or `orgId` metadata constraints on every Pinecone operation.
 
 ## 12. Differentiation Strategy
-Most existing solutions are ChatGPT wrappers or features bolted onto legacy templates. Borg is fundamentally different: **AI is the core architecture, not a feature.** By serving as the exclusive proxy for professional communication, it creates a high-integrity, closed-loop network. It solves an actual problem with a solution that makes existing manual workflows look primitive in comparison.
+Many platforms allow unconstrained data uploads, rapidly degrading the LLM's accuracy with conflicting or outdated context. Borg deliberately introduces friction at the ingestion layer relative to standard users—requiring Admin approval for shared organizational uploads. This ensures the RAG model is only answering utilizing verified, premium context.

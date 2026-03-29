@@ -1,24 +1,28 @@
-# Project Borg: The "Post-Communication" Organization
+# Project Borg: Data-Sharing RAG Platform
 
-Project Borg is an AI agent network designed to eliminate human-to-human coordination friction. By delegating organizational "glue work" (scheduling, information retrieval, cross-department updates) to dedicated AI proxies, employees can focus entirely on deep, strategic work.
+Project Borg is an enterprise-grade web application designed to eliminate time wasted on manual data retrieval. By providing a shared, unified vector database per "Organization," Borg streamlines information sharing through Retrieval-Augmented Generation (RAG). 
+
+Whether you are an individual rapidly parsing `.pdf` and `.docx` files or a corporate team seeking a single source of truth, Borg empowers you to instantly query your collective knowledge base using advanced LLM reasoning.
 
 **This project is submitted for the Yconic Hackathon (March 28-29, 2026).**
 
-## Features Implemented
-This repository directly executes the core components outlined in our `master_plan.md`:
+## Value Proposition
+- **For Corporate Users:** Eradicates the "Coordination Tax" by converting fragmented silos (emails, wikis, Slack threads) into a single, highly accurate AI query endpoint.
+- **For Individual Users:** Accelerates research and synthesis by allowing immediate uploads of personal documents (`.pdf`, `.docx`, raw text) into the "My Data" section for instant RAG interactions.
 
-- **Dedicated User Proxy Architecture:** A frontend built in React/Vite that provides a UI for users to manage their AI proxies (see `BotSettingsPage.jsx`).
-- **Secure Authentication:** Firebase authentication integrated to ensure proxy access is bound to verified identities (`src/firebase/auth.js`).
-- **Org Data RAG Pipeline:** A retrieval-augmented generation pipeline using Pinecone and Google Generative AI (`src/lib/rag.js`). This represents the Tier 2 (Org Data) layer, enabling agents to parse organization-wide data.
-- **Inter-Agent Messaging Interface:** A dedicated `MessagingPage.jsx` demonstrating the interface where users can observe agent logs and proxy interactions.
-- **Customizable User Data (Tier 1):** The `ProfilePage.jsx` allows users to control the personality and context available to their proxy.
+## Key Features & Roles
+- **Role-Based Access Control (RBAC):**
+  - **Administrators:** Can create organizations. They possess unrestricted access to instantly upload, manage, and query data.
+  - **Standard Users:** Can join existing organizations and perform unlimited free queries against the shared database. To maintain data integrity, users must request Administrator approval to push new document uploads into the communal vector index.
+- **Multi-Format Data Ingestion:** Dedicated processing pipelines for parsing `.pdf`, `.docx`, and raw user text efficiently into the vector store via the specific "My Data" section.
+- **Unified Gemini 2.5 Flash Queries:** All context is routed through a single, powerful Gemini 2.5 Flash model, guaranteeing consistent, low-latency synthesis across the organization.
 
 ## Tech Stack
-- **Frontend:** React 18, React Router, Vite, custom styled CSS.
-- **Backend & Auth:** Firebase.
+- **Frontend:** React 18, React Router, Vite, custom CSS.
+- **Backend & Auth:** Firebase Auth and Realtime/Firestore databases.
 - **Vector Database:** Pinecone (`@pinecone-database/pinecone`).
-- **LLM / Core Logic:** Google Gemini via `@google/generative-ai`.
-- **Document Parsing:** `pdf-parse` for ingesting local organizational knowledge into the Pinecone RAG.
+- **LLM Engine:** Google Gemini 2.5 Flash via `@google/generative-ai`.
+- **Parsing Utilities:** Document digestion for multi-format text ingestion.
 
 ## Getting Started
 
@@ -27,7 +31,7 @@ This repository directly executes the core components outlined in our `master_pl
    npm install
    ```
 2. **Environment Variables:**
-   Ensure you have configured your environment variables for Firebase, Pinecone, and Google Generative AI in an `.env` file at the root of the project.
+   Ensure `.env` contains secure keys for Firebase, Pinecone, and Google Generative AI.
    
 3. **Run the Development Server:**
    ```bash
@@ -36,7 +40,7 @@ This repository directly executes the core components outlined in our `master_pl
    Navigate to `http://localhost:5173/` in your browser.
 
 ## Alignment to Master Plan
-As stated in our master plan, we prioritized building a functional foundation over broad, shallow features. The current commit demonstrates our 24-hour execution phase: completing the RAG setup, establishing the secure Firebase identity layer, and providing the crucial React UI interfaces to observe proxy negotiations.
+As stated in our master plan, we prioritized building a functional foundation for a curated organizational brain. We have implemented the strict Admin/User permission handshake required to maintain database integrity, along with multi-format processing capabilities for a robust knowledge base.
 
 ## Deployment
 (We are actively preparing our deployment URL which will be linked here and in the Team Portal prior to judging.)
