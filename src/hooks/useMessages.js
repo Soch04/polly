@@ -48,6 +48,7 @@ import {
 import { queryKnowledgeBase } from '../lib/rag'
 import { classifyQuery } from '../agent/queryClassifier'
 import { rerankResults } from '../lib/ragReranker'
+import { generateHypotheticalDoc, isHyDEBeneficial } from '../lib/hyde'
 
 export function useMessages() {
   const { user, agent } = useAuth()
@@ -123,11 +124,20 @@ export function useMessages() {
             filters.department = user.department
           }
 
+          // ── Step 2a: HyDE — generate hypothetical document for embedding ───────────
+          // For FACTUAL and PROCEDURAL queries, embed a Gemini-generated hypothetical
+          // answer document instead of the raw question. Closes the vector space gap
+          // between question syntax and document syntax (Gao et al. 2022).
+          const queryForEmbedding = isHyDEBeneficial(intent.type)
+            ? await generateHypotheticalDoc(content, '', user?.department)
+            : content
+
+          // ── Step 2b: Pinecone retrieval with intent-optimized topK ─────────────
           const rawResults = await queryKnowledgeBase(
             user.orgId,
-            content,
+            queryForEmbedding,
             filters,
-            intent.topK   // intent-optimized top-K
+            intent.topK
           )
 
           if (rawResults.length > 0) {
