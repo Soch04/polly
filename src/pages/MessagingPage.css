@@ -137,6 +137,141 @@
   background: var(--color-bg);
 }
 
+/* Right pane stacks incoming requests on top of the chat thread */
+.hub-right-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Incoming Requests Panel ── */
+.incoming-requests-panel {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  flex-shrink: 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.incoming-requests-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+}
+
+.incoming-count {
+  margin-left: auto;
+  background: #a78bfa22;
+  color: #a78bfa;
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.incoming-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.incoming-request-item {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.15s;
+}
+
+.incoming-pending {
+  border-left: 3px solid #a78bfa;
+}
+
+.incoming-replied {
+  border-left: 3px solid var(--color-success);
+  opacity: 0.8;
+}
+
+.incoming-request-from {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  margin-bottom: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.incoming-bot-icon {
+  color: #a78bfa;
+  font-size: 1rem;
+}
+
+.incoming-email {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.incoming-status-badge {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.incoming-status-badge.pending {
+  background: rgba(167, 139, 250, 0.1);
+  color: #a78bfa;
+}
+
+.incoming-status-badge.replied {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+}
+
+.incoming-request-body {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.incoming-request-reply {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.reply-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-success);
+  margin-bottom: 0.25rem;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+
 /* ── Typing indicator in personal chat ── */
 .typing-indicator {
   display: flex;

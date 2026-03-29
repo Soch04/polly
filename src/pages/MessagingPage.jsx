@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMessages } from '../hooks/useMessages'
 import { useConversations } from '../hooks/useConversations'
+import { useAgentInbox } from '../hooks/useAgentInbox'
 import { useAuth } from '../context/AuthContext'
 import { Navigate } from 'react-router-dom'
 import MessageBubble from '../components/messaging/MessageBubble'
 import MessageInput from '../components/messaging/MessageInput'
 import ChatSidebar from '../components/hub/ChatSidebar'
 import ChatThread from '../components/hub/ChatThread'
-import { RiRobot2Line, RiSignalWifiLine, RiMessage3Line } from 'react-icons/ri'
+import { subscribeToIncomingMentions } from '../firebase/firestore'
+import { RiRobot2Line, RiSignalWifiLine, RiMessage3Line, RiMailLine, RiCheckLine, RiLoader4Line } from 'react-icons/ri'
 import './MessagingPage.css'
 
 const TABS = [
@@ -16,7 +18,7 @@ const TABS = [
 ]
 
 export default function MessagingPage() {
-  const { agent } = useAuth()
+  const { user, agent } = useAuth()
   const { messages, isTyping, isSending, sendMessage } = useMessages()
   const {
     directConvs, groupConvs,
@@ -26,11 +28,24 @@ export default function MessagingPage() {
     streamingMsgId,
   } = useConversations()
 
+  // Activate real-time inbox listener (auto-replies to incoming @mentions)
+  useAgentInbox()
+
+  // Local state for incoming interactions displayed in the Hub
+  const [interactions, setInteractions] = useState([])
+
   const [activeTab, setActiveTab] = useState('personal')
   const feedRef = useRef(null)
 
   // If no agent yet, redirect to the initialization flow
   if (!agent) return <Navigate to="/bot-settings" replace />
+
+  // Subscribe to incoming mentions for the Hub tab
+  useEffect(() => {
+    if (!user?.email) return
+    const unsub = subscribeToIncomingMentions(user.email, setInteractions)
+    return () => unsub()
+  }, [user?.email])
 
   // Auto-scroll in personal chat
   useEffect(() => {
@@ -67,9 +82,11 @@ export default function MessagingPage() {
               <Icon style={{ marginRight: '0.375rem', verticalAlign: 'middle' }} />
               {label}
               {/* Hub unread badge on the tab */}
-              {id === 'hub' && totalUnread > 0 && (
+              {id === 'hub' && (totalUnread > 0 || interactions.some(i => i.status === 'pending')) && (
                 <span className="tab-unread-badge">
-                  {totalUnread > 9 ? '9+' : totalUnread}
+                  {totalUnread + interactions.filter(i => i.status === 'pending').length > 9
+                    ? '9+'
+                    : totalUnread + interactions.filter(i => i.status === 'pending').length}
                 </span>
               )}
             </button>
@@ -145,12 +162,50 @@ export default function MessagingPage() {
             activeConvIds={activeConvIds}
             unreadCounts={unreadCounts}
           />
-          <ChatThread
-            conv={selectedConv}
-            messages={selectedMessages}
-            isActive={selectedConv ? activeConvIds.includes(selectedConv.id) : false}
-            streamingMsgId={streamingMsgId}
-          />
+          <div className="hub-right-pane">
+            {/* ── Incoming Requests Panel ── */}
+            {interactions.length > 0 && (
+              <div className="incoming-requests-panel">
+                <div className="incoming-requests-header">
+                  <RiMailLine />
+                  <span>Incoming Agent Requests</span>
+                  <span className="incoming-count">{interactions.length}</span>
+                </div>
+                <div className="incoming-requests-list">
+                  {interactions.map(interaction => (
+                    <div
+                      key={interaction.id}
+                      className={`incoming-request-item ${interaction.status === 'pending' ? 'incoming-pending' : 'incoming-replied'}`}
+                    >
+                      <div className="incoming-request-from">
+                        <RiRobot2Line className="incoming-bot-icon" />
+                        <strong>{interaction.sender_name}</strong>
+                        <span className="incoming-email">({interaction.sender_email})</span>
+                        <span className={`incoming-status-badge ${interaction.status}`}>
+                          {interaction.status === 'pending'
+                            ? <><RiLoader4Line className="spin" /> Processing…</>
+                            : <><RiCheckLine /> Replied</>}
+                        </span>
+                      </div>
+                      <div className="incoming-request-body">{interaction.body || interaction.content}</div>
+                      {interaction.reply && (
+                        <div className="incoming-request-reply">
+                          <span className="reply-label">Your agent replied:</span>
+                          {interaction.reply}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <ChatThread
+              conv={selectedConv}
+              messages={selectedMessages}
+              isActive={selectedConv ? activeConvIds.includes(selectedConv.id) : false}
+              streamingMsgId={streamingMsgId}
+            />
+          </div>
         </div>
 
       )}
