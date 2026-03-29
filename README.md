@@ -1,5 +1,8 @@
 # Project Borg — Org Knowledge Query Platform
 
+[![Build Check](https://github.com/Soch04/borg/actions/workflows/build-check.yml/badge.svg)](https://github.com/Soch04/borg/actions/workflows/build-check.yml)
+[![Firebase Deploy](https://github.com/Soch04/borg/actions/workflows/firebase-deploy.yml/badge.svg)](https://github.com/Soch04/borg/actions/workflows/firebase-deploy.yml)
+
 > **Yconic Hackathon — Track: Most Innovative Hack**  
 > Built in 24 hours · March 28–29, 2026  
 > **Live:** https://polly-970c1.web.app
@@ -8,40 +11,40 @@
 
 ## 🚀 Project Overview
 
-**Project Borg** is a centralized, role-gated knowledge management platform that uses Retrieval-Augmented Generation (RAG) to eliminate the **'Coordination Tax'** in modern organizations. It enables both individuals and corporate teams to query a curated, organization-scoped vector database using natural language, replacing fragmented SaaS searches and manual document retrieval with a single conversational interface. 
+**Project Borg** is a dual-stack organizational knowledge platform that uses Retrieval-Augmented Generation (RAG) to eliminate the **‘Coordination Tax’** in modern organizations. Teams query a curated, org-scoped vector database using natural language — replacing fragmented document searches with a single conversational interface grounded in verified organizational knowledge.
 
-Each organization owns an isolated Pinecone vector store, partitioned by `orgId`, and all data ingestion passes through an Admin approval workflow before reaching the shared index, ensuring the knowledge base remains clean and verified. The system is built on a React/Vite frontend with Firebase handling authentication and role-based access control, Google Gemini 2.5 Flash as the core LLM for query generation, and Pinecone as the vector store backend. 
+The platform is split into two services:
+- **Query layer** — React/Vite SPA. Handles authentication, the conversational interface, and the 5-stage RAG query pipeline (intent classification → HyDE → Pinecone ANN → LLM re-ranking → citation assembly) running entirely in the browser.
+- **Ingestion layer** — Python FastAPI server (`user_input.py`). Handles multi-format document ingestion (PDF, DOCX, text) using LangChain’s `SemanticChunker` + `RecursiveCharacterTextSplitter`, HuggingFace `all-mpnet-base-v2` embeddings (768-dim), and direct Pinecone upsert with org namespace isolation.
 
-The permission handshake between standard users and administrators is positioned as the core innovation — treating the vector database as a curated ledger of truth rather than an uncontrolled data dump. Multi-format ingestion supports PDF, DOCX, and raw text files, with modularity designed to allow future integrations with Google Drive or Notion. Project Borg targets a well-understood enterprise problem — knowledge fragmentation — and differentiates itself by sitting between generic enterprise search tools like SharePoint and unconstrained AI chat interfaces. The 24-hour execution plan is divided into clear 6-hour blocks with role-specific responsibilities assigned across a three-person team covering frontend, backend/IAM, and data/AI concerns.
+Each organization owns an isolated Pinecone namespace partitioned by `orgId`. The `is_approved: true` metadata flag is enforced as a server-side Pinecone filter on every query, ensuring only curated documents surface in responses.
 
 ---
 
 ## Architecture
 
 ```
-User (Browser)
-    │
-    ▼
-Query Interface (React 18 + Vite)
-    │  User sends question
-    ▼
-useMessages.js  ──────────────────────────────────────────────────────┐
-    │                                                                  │
-    │  1. queryKnowledgeBase(orgId, question, { is_approved: true })  │
-    │     → Pinecone top-K=5 similarity search                        │
-    │     → Returns chunks with { title, text, docId }                │
-    │                                                                  │
-    │  2. Chunks injected into Gemini system prompt                   │
-    │     → Gemini 2.5 Flash Lite synthesizes grounded response       │
-    │     → Source citations returned alongside response text         │
-    │                                                                  │
-    │  3. Bot response + citations written to Firestore messages      │
-    └──────────────────────────────────────────────────────────────────┘
-    │
-    ▼
-Firebase Firestore (messages/{id})   Pinecone (borg-org-knowledge)
-    Real-time onSnapshot listener     Namespace per orgId
-    User session scoped               is_approved filter on every query
+┌─────────────────────────────── INGESTION PATH ───────────────────────────┐
+│ React DataUploader → POST /api/upload or /api/text                     │
+│                                                                          │
+│ user_input.py (FastAPI)                                                  │
+│   ├─ Load: PyPDFLoader / Docx2txtLoader / TextLoader                     │
+│   ├─ Classify: structured vs unstructured (via signal scoring)           │
+│   ├─ Chunk: SemanticChunker | RecursiveCharacterTextSplitter (1000/100)  │
+│   ├─ Embed: HuggingFace all-mpnet-base-v2 (768-dim)                      │
+│   └─ Upsert: Pinecone namespace=orgId, is_approved=true metadata          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────── QUERY PATH ─────────────────────────────┐
+│ User question → useMessages.js (5-stage pipeline)                       │
+│                                                                          │
+│   1. classifyQuery()         — FACTUAL / PROCEDURAL / ANALYTICAL / CONV │
+│   2. generateHypotheticalDoc — HyDE: embed answer-space doc, not query  │
+│   3. queryKnowledgeBase()    — Pinecone ANN, topK=4-8, is_approved:true │
+│   4. rerankResults()         — Gemini cross-encoder score 0-10 (≥6 pass) │
+│   5. buildCitationBlock()    — dedup, confidence score, token budget trim│
+│   6. streamGemini()          — SSE streaming, tokens rendered in real-time│
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -54,8 +57,10 @@ Firebase Firestore (messages/{id})   Pinecone (borg-org-knowledge)
 | **Auth** | Firebase Authentication (email/password) |
 | **Database** | Firebase Firestore (6 collections, real-time listeners) |
 | **Vector DB** | Pinecone — 768-dim cosine, namespace-per-org |
-| **Embeddings** | `all-mpnet-base-v2` (768 dimensions) |
-| **LLM** | Gemini 2.5 Flash (multi-turn history, system prompt) |
+| **Query Embeddings** | Gemini `text-embedding-004` (browser, via RAG pipeline) |
+| **Ingestion Embeddings** | HuggingFace `all-mpnet-base-v2` 768-dim (Python backend) |
+| **Ingestion Backend** | Python FastAPI (`user_input.py`) — LangChain chunking, Pinecone upsert |
+| **LLM** | Gemini 2.5 Flash (multi-turn, streaming SSE) |
 | **Hosting** | Firebase Hosting (CDN) |
 | **Styling** | Vanilla CSS — Microsoft Fluent/Metro design system |
 
