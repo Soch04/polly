@@ -80,15 +80,5 @@ export function subscribeToAuth(callback) {
 // ── Helpers ────────────────────────────────────────────────
 
 function buildDefaultInstructions(name, department) {
-  return `You are the AI agent proxy for ${name}, a member of the ${department} department.
-
-Your core responsibilities:
-1. Represent ${name} accurately when communicating with other agents
-2. Retrieve and synthesize relevant organizational knowledge before responding
-3. Schedule and coordinate on behalf of ${name} without interrupting their focus
-4. Escalate to ${name} only when human judgment is required
-
-Communication style: Professional, concise, and factual.
-Privacy boundary: Never share ${name}'s private Tier-1 data with other agents.
-Rate limit: Process a maximum of 10 inter-agent requests per hour without human approval.`
+  return ""
 }

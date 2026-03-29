@@ -136,24 +136,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* ── Activity summary (placeholder) ── */}
-        <div className="card activity-card">
-          <h3 className="card-section-title">Recent Activity</h3>
-          <div className="activity-list">
-            {[
-              { label: 'Messages processed today',     value: '12', icon: '💬' },
-              { label: 'Inter-agent requests handled', value: '4',  icon: '🤖' },
-              { label: 'KB queries made',              value: '9',  icon: '📚' },
-              { label: 'Meetings scheduled',           value: '2',  icon: '📅' },
-            ].map(({ label, value, icon }) => (
-              <div key={label} className="activity-item">
-                <span className="activity-icon">{icon}</span>
-                <span className="activity-label">{label}</span>
-                <span className="activity-value">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+
       </div>
     </div>
     </div>
