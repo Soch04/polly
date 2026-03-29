@@ -1,0 +1,19 @@
+﻿
+
+    Directory: C:\Users\na
+    te\anaconda3\Lib\site-
+    packages
+
+
+Mode         LastWriteTime
+----         -------------
+d-----   8/28/2025   3:12 
+                        PM
+d-----   3/28/2026  11:10 
+                        PM
+-a----   3/28/2026  11:10 
+                        PM
+-a----  12/20/2024  12:16 
+                        PM
+
+

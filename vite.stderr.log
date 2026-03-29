@@ -1,0 +1,75 @@
+[2m8:48:41 PM[22m [31m[1m[vite][22m[39m Pre-transform error: Cannot find module './config/files/index.js'
+Require stack:
+- C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js
+[2m8:48:41 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: Cannot find module './config/files/index.js'
+Require stack:
+- C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/nate/OneDrive/Desktop/BORG/polly/src/main.jsx[39m
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1448:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)
+      at Module._load (node:internal/modules/cjs/loader:1234:25)
+      at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+      at Module.require (node:internal/modules/cjs/loader:1548:12)
+      at require (node:internal/modules/helpers:152:16)
+      at Object.<anonymous> (C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js:173:17)
+      at Module._compile (node:internal/modules/cjs/loader:1804:14)
+[2m10:36:13 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Cannot find module './config/files/index.js'
+Require stack:
+- C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js
+[2m10:36:14 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: Cannot find module './config/files/index.js'
+Require stack:
+- C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/nate/OneDrive/Desktop/BORG/polly/src/main.jsx[39m
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1448:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)
+      at Module._load (node:internal/modules/cjs/loader:1234:25)
+      at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+      at Module.require (node:internal/modules/cjs/loader:1548:12)
+      at require (node:internal/modules/helpers:152:16)
+      at Object.<anonymous> (C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js:173:17)
+      at Module._compile (node:internal/modules/cjs/loader:1804:14)
+[2m10:36:14 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Cannot find module './config/files/index.js'
+Require stack:
+- C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js
+[2m10:45:39 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Cannot find module './config/files/index.js'
+Require stack:
+- C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js
+[2m10:45:39 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: Cannot find module './config/files/index.js'
+Require stack:
+- C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/nate/OneDrive/Desktop/BORG/polly/src/main.jsx[39m
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1448:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)
+      at Module._load (node:internal/modules/cjs/loader:1234:25)
+      at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+      at Module.require (node:internal/modules/cjs/loader:1548:12)
+      at require (node:internal/modules/helpers:152:16)
+      at Object.<anonymous> (C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js:173:17)
+      at Module._compile (node:internal/modules/cjs/loader:1804:14)
+[2m10:47:36 AM[22m [31m[1m[vite][22m[39m Pre-transform error: Cannot find module './config/files/index.js'
+Require stack:
+- C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js
+[2m10:47:36 AM[22m [31m[1m[vite][22m[39m [31mInternal server error: Cannot find module './config/files/index.js'
+Require stack:
+- C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js[39m
+  Plugin: [35mvite:react-babel[39m
+  File: [36mC:/Users/nate/OneDrive/Desktop/BORG/polly/src/main.jsx[39m
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1448:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)
+      at Module._load (node:internal/modules/cjs/loader:1234:25)
+      at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+      at Module.require (node:internal/modules/cjs/loader:1548:12)
+      at require (node:internal/modules/helpers:152:16)
+      at Object.<anonymous> (C:\Users\nate\OneDrive\Desktop\BORG\polly\node_modules\@babel\core\lib\index.js:173:17)
+      at Module._compile (node:internal/modules/cjs/loader:1804:14)

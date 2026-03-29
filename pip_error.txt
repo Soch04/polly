@@ -1,0 +1,311 @@
+﻿Collecting langchain (from -r requirements.txt (line 1))
+  Using cached langchain-1.2.13-py3-none-any.whl.metadata (5.8 kB)
+Collecting langchain-core (from -r requirements.txt (line 2))
+  Using cached langchain_core-1.2.23-py3-none-any.whl.metadata (4.4 kB)
+Collecting langchain-community (from -r requirements.txt (line 3))
+  Using cached langchain_community-0.4.1-py3-none-any.whl.metadata (3.0 kB)
+Collecting langchain-google-genai (from -r requirements.txt (line 4))
+  Using cached langchain_google_genai-4.2.1-py3-none-any.whl.metadata (2.7 kB)
+Collecting pinecone-client (from -r requirements.txt (line 5))
+  Using cached pinecone_client-6.0.0-py3-none-any.whl.metadata (3.4 kB)
+Collecting langchain-pinecone (from -r requirements.txt (line 6))
+  Using cached langchain_pinecone-0.2.13-py3-none-any.whl.metadata (8.6 kB)
+Collecting pypdf (from -r requirements.txt (line 7))
+  Using cached pypdf-6.9.2-py3-none-any.whl.metadata (7.1 kB)
+Requirement already satisfied: beautifulsoup4 in c:\users\nate\anaconda3\lib\site-packages (from -r requirements.txt (line 8)) (4.12.3)
+Collecting sentence-transformers (from -r requirements.txt (line 9))
+  Using cached sentence_transformers-5.3.0-py3-none-any.whl.metadata (16 kB)
+Requirement already satisfied: python-dotenv in c:\users\nate\anaconda3\lib\site-packages (from -r requirements.txt (line 10)) (1.1.0)
+Collecting fastapi (from -r requirements.txt (line 11))
+  Using cached fastapi-0.135.2-py3-none-any.whl.metadata (28 kB)
+Requirement already satisfied: uvicorn in c:\users\nate\anaconda3\lib\site-packages (from -r requirements.txt (line 12)) (0.35.0)
+Requirement already satisfied: python-multipart in c:\users\nate\anaconda3\lib\site-packages (from -r requirements.txt (line 13)) (0.0.20)
+Requirement already satisfied: docx2txt in c:\users\nate\anaconda3\lib\site-packages (from -r requirements.txt (line 14)) (0.9)
+Collecting langchain-experimental (from -r requirements.txt (line 15))
+  Using cached langchain_experimental-0.4.1-py3-none-any.whl.metadata (1.3 kB)
+Collecting langchain-huggingface (from -r requirements.txt (line 16))
+  Using cached langchain_huggingface-1.2.1-py3-none-any.whl.metadata (3.3 kB)
+Collecting langgraph<1.2.0,>=1.1.1 (from langchain->-r requirements.txt (line 1))
+  Using cached langgraph-1.1.3-py3-none-any.whl.metadata (7.4 kB)
+Requirement already satisfied: pydantic<3.0.0,>=2.7.4 in c:\users\nate\anaconda3\lib\site-packages (from langchain->-r requirements.txt (line 1)) (2.11.7)
+Requirement already satisfied: jsonpatch<2.0.0,>=1.33.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core->-r requirements.txt (line 2)) (1.33)
+Collecting langsmith<1.0.0,>=0.3.45 (from langchain-core->-r requirements.txt (line 2))
+  Using cached langsmith-0.7.22-py3-none-any.whl.metadata (15 kB)
+Requirement already satisfied: packaging>=23.2.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core->-r requirements.txt (line 2)) (24.2)
+Requirement already satisfied: pyyaml<7.0.0,>=5.3.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core->-r requirements.txt (line 2)) (6.0.2)
+Requirement already satisfied: tenacity!=8.4.0,<10.0.0,>=8.1.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core->-r requirements.txt (line 2)) (9.0.0)
+Requirement already satisfied: typing-extensions<5.0.0,>=4.7.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core->-r requirements.txt (line 2)) (4.12.2)
+Requirement already satisfied: uuid-utils<1.0,>=0.12.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core->-r requirements.txt (line 2)) (0.14.1)
+Requirement already satisfied: jsonpointer>=1.9 in c:\users\nate\anaconda3\lib\site-packages (from jsonpatch<2.0.0,>=1.33.0->langchain-core->-r requirements.txt (line 2)) (3.0.0)
+Collecting langgraph-checkpoint<5.0.0,>=2.1.0 (from langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1))
+  Using cached langgraph_checkpoint-4.0.1-py3-none-any.whl.metadata (4.9 kB)
+Collecting langgraph-prebuilt<1.1.0,>=1.0.8 (from langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1))
+  Using cached langgraph_prebuilt-1.0.8-py3-none-any.whl.metadata (5.2 kB)
+Collecting langgraph-sdk<0.4.0,>=0.3.0 (from langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1))
+  Using cached langgraph_sdk-0.3.12-py3-none-any.whl.metadata (1.6 kB)
+Requirement already satisfied: xxhash>=3.5.0 in c:\users\nate\anaconda3\lib\site-packages (from langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1)) (3.6.0)
+Collecting ormsgpack>=1.12.0 (from langgraph-checkpoint<5.0.0,>=2.1.0->langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1))
+  Using cached ormsgpack-1.12.2-cp313-cp313-win_amd64.whl.metadata (3.3 kB)
+Requirement already satisfied: httpx>=0.25.2 in c:\users\nate\anaconda3\lib\site-packages (from langgraph-sdk<0.4.0,>=0.3.0->langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1)) (0.28.1)
+Collecting orjson>=3.11.5 (from langgraph-sdk<0.4.0,>=0.3.0->langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1))
+  Using cached orjson-3.11.7-cp313-cp313-win_amd64.whl.metadata (43 kB)
+Requirement already satisfied: requests-toolbelt>=1.0.0 in c:\users\nate\anaconda3\lib\site-packages (from langsmith<1.0.0,>=0.3.45->langchain-core->-r requirements.txt (line 2)) (1.0.0)
+Requirement already satisfied: requests>=2.0.0 in c:\users\nate\anaconda3\lib\site-packages (from langsmith<1.0.0,>=0.3.45->langchain-core->-r requirements.txt (line 2)) (2.32.4)
+Requirement already satisfied: zstandard>=0.23.0 in c:\users\nate\anaconda3\lib\site-packages (from langsmith<1.0.0,>=0.3.45->langchain-core->-r requirements.txt (line 2)) (0.23.0)
+Requirement already satisfied: anyio in c:\users\nate\anaconda3\lib\site-packages (from httpx>=0.25.2->langgraph-sdk<0.4.0,>=0.3.0->langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1)) (4.7.0)
+Requirement already satisfied: certifi in c:\users\nate\anaconda3\lib\site-packages (from httpx>=0.25.2->langgraph-sdk<0.4.0,>=0.3.0->langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1)) (2025.8.3)
+Requirement already satisfied: httpcore==1.* in c:\users\nate\anaconda3\lib\site-packages (from httpx>=0.25.2->langgraph-sdk<0.4.0,>=0.3.0->langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1)) (1.0.9)
+Requirement already satisfied: idna in c:\users\nate\anaconda3\lib\site-packages (from httpx>=0.25.2->langgraph-sdk<0.4.0,>=0.3.0->langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1)) (3.7)
+Requirement already satisfied: h11>=0.16 in c:\users\nate\anaconda3\lib\site-packages (from httpcore==1.*->httpx>=0.25.2->langgraph-sdk<0.4.0,>=0.3.0->langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1)) (0.16.0)
+Requirement already satisfied: annotated-types>=0.6.0 in c:\users\nate\anaconda3\lib\site-packages (from pydantic<3.0.0,>=2.7.4->langchain->-r requirements.txt (line 1)) (0.6.0)
+Requirement already satisfied: pydantic-core==2.33.2 in c:\users\nate\anaconda3\lib\site-packages (from pydantic<3.0.0,>=2.7.4->langchain->-r requirements.txt (line 1)) (2.33.2)
+Requirement already satisfied: typing-inspection>=0.4.0 in c:\users\nate\anaconda3\lib\site-packages (from pydantic<3.0.0,>=2.7.4->langchain->-r requirements.txt (line 1)) (0.4.0)
+Collecting langchain-classic<2.0.0,>=1.0.0 (from langchain-community->-r requirements.txt (line 3))
+  Using cached langchain_classic-1.0.3-py3-none-any.whl.metadata (4.8 kB)
+Requirement already satisfied: SQLAlchemy<3.0.0,>=1.4.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-community->-r requirements.txt (line 3)) (2.0.41)
+Collecting requests>=2.0.0 (from langsmith<1.0.0,>=0.3.45->langchain-core->-r requirements.txt (line 2))
+  Using cached requests-2.33.0-py3-none-any.whl.metadata (5.1 kB)
+Requirement already satisfied: aiohttp<4.0.0,>=3.8.3 in c:\users\nate\anaconda3\lib\site-packages (from langchain-community->-r requirements.txt (line 3)) (3.12.15)
+Collecting dataclasses-json<0.7.0,>=0.6.7 (from langchain-community->-r requirements.txt (line 3))
+  Using cached dataclasses_json-0.6.7-py3-none-any.whl.metadata (25 kB)
+Collecting pydantic-settings<3.0.0,>=2.10.1 (from langchain-community->-r requirements.txt (line 3))
+  Using cached pydantic_settings-2.13.1-py3-none-any.whl.metadata (3.4 kB)
+Collecting httpx-sse<1.0.0,>=0.4.0 (from langchain-community->-r requirements.txt (line 3))
+  Using cached httpx_sse-0.4.3-py3-none-any.whl.metadata (9.7 kB)
+Requirement already satisfied: numpy>=2.1.0 in c:\users\nate\appdata\roaming\python\python313\site-packages (from langchain-community->-r requirements.txt (line 3)) (2.2.1)
+Collecting aiohappyeyeballs>=2.5.0 (from aiohttp<4.0.0,>=3.8.3->langchain-community->-r requirements.txt (line 3))
+  Using cached aiohappyeyeballs-2.6.1-py3-none-any.whl.metadata (5.9 kB)
+Requirement already satisfied: aiosignal>=1.4.0 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community->-r requirements.txt (line 3)) (1.4.0)
+Requirement already satisfied: attrs>=17.3.0 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community->-r requirements.txt (line 3)) (24.3.0)
+Requirement already satisfied: frozenlist>=1.1.1 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community->-r requirements.txt (line 3)) (1.5.0)
+Requirement already satisfied: multidict<7.0,>=4.5 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community->-r requirements.txt (line 3)) (6.1.0)
+Requirement already satisfied: propcache>=0.2.0 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community->-r requirements.txt (line 3)) (0.3.1)
+Requirement already satisfied: yarl<2.0,>=1.17.0 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community->-r requirements.txt (line 3)) (1.18.0)
+Collecting marshmallow<4.0.0,>=3.18.0 (from dataclasses-json<0.7.0,>=0.6.7->langchain-community->-r requirements.txt (line 3))
+  Using cached marshmallow-3.26.2-py3-none-any.whl.metadata (7.3 kB)
+Collecting typing-inspect<1,>=0.4.0 (from dataclasses-json<0.7.0,>=0.6.7->langchain-community->-r requirements.txt (line 3))
+  Using cached typing_inspect-0.9.0-py3-none-any.whl.metadata (1.5 kB)
+Collecting langchain-text-splitters<2.0.0,>=1.1.1 (from langchain-classic<2.0.0,>=1.0.0->langchain-community->-r requirements.txt (line 3))
+  Using cached langchain_text_splitters-1.1.1-py3-none-any.whl.metadata (3.3 kB)
+Requirement already satisfied: charset_normalizer<4,>=2 in c:\users\nate\anaconda3\lib\site-packages (from requests>=2.0.0->langsmith<1.0.0,>=0.3.45->langchain-core->-r requirements.txt (line 2)) (3.3.2)
+Requirement already satisfied: urllib3<3,>=1.26 in c:\users\nate\anaconda3\lib\site-packages (from requests>=2.0.0->langsmith<1.0.0,>=0.3.45->langchain-core->-r requirements.txt (line 2)) (2.5.0)
+Requirement already satisfied: greenlet>=1 in c:\users\nate\anaconda3\lib\site-packages (from SQLAlchemy<3.0.0,>=1.4.0->langchain-community->-r requirements.txt (line 3)) (3.1.1)
+Requirement already satisfied: mypy-extensions>=0.3.0 in c:\users\nate\anaconda3\lib\site-packages (from typing-inspect<1,>=0.4.0->dataclasses-json<0.7.0,>=0.6.7->langchain-community->-r requirements.txt (line 3)) (1.0.0)
+Requirement already satisfied: filetype<2.0.0,>=1.2.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-google-genai->-r requirements.txt (line 4)) (1.2.0)
+Collecting google-genai<2.0.0,>=1.56.0 (from langchain-google-genai->-r requirements.txt (line 4))
+  Using cached google_genai-1.69.0-py3-none-any.whl.metadata (52 kB)
+Collecting anyio (from httpx>=0.25.2->langgraph-sdk<0.4.0,>=0.3.0->langgraph<1.2.0,>=1.1.1->langchain->-r requirements.txt (line 1))
+  Using cached anyio-4.13.0-py3-none-any.whl.metadata (4.5 kB)
+Collecting google-auth<3.0.0,>=2.48.1 (from google-auth[requests]<3.0.0,>=2.48.1->google-genai<2.0.0,>=1.56.0->langchain-google-genai->-r requirements.txt (line 4))
+  Using cached google_auth-2.49.1-py3-none-any.whl.metadata (6.2 kB)
+Requirement already satisfied: websockets<17.0,>=13.0.0 in c:\users\nate\anaconda3\lib\site-packages (from google-genai<2.0.0,>=1.56.0->langchain-google-genai->-r requirements.txt (line 4)) (15.0.1)
+Collecting typing-extensions<5.0.0,>=4.7.0 (from langchain-core->-r requirements.txt (line 2))
+  Using cached typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+Requirement already satisfied: distro<2,>=1.7.0 in c:\users\nate\anaconda3\lib\site-packages (from google-genai<2.0.0,>=1.56.0->langchain-google-genai->-r requirements.txt (line 4)) (1.9.0)
+Requirement already satisfied: sniffio in c:\users\nate\anaconda3\lib\site-packages (from google-genai<2.0.0,>=1.56.0->langchain-google-genai->-r requirements.txt (line 4)) (1.3.0)
+Requirement already satisfied: pyasn1-modules>=0.2.1 in c:\users\nate\anaconda3\lib\site-packages (from google-auth<3.0.0,>=2.48.1->google-auth[requests]<3.0.0,>=2.48.1->google-genai<2.0.0,>=1.56.0->langchain-google-genai->-r requirements.txt (line 4)) (0.4.2)
+Requirement already satisfied: cryptography>=38.0.3 in c:\users\nate\anaconda3\lib\site-packages (from google-auth<3.0.0,>=2.48.1->google-auth[requests]<3.0.0,>=2.48.1->google-genai<2.0.0,>=1.56.0->langchain-google-genai->-r requirements.txt (line 4)) (44.0.1)
+Collecting pinecone-plugin-interface<0.0.8,>=0.0.7 (from pinecone-client->-r requirements.txt (line 5))
+  Using cached pinecone_plugin_interface-0.0.7-py3-none-any.whl.metadata (1.2 kB)
+Requirement already satisfied: python-dateutil>=2.5.3 in c:\users\nate\anaconda3\lib\site-packages (from pinecone-client->-r requirements.txt (line 5)) (2.9.0.post0)
+Collecting pinecone<8.0.0,>=6.0.0 (from pinecone[asyncio]<8.0.0,>=6.0.0->langchain-pinecone->-r requirements.txt (line 6))
+  Using cached pinecone-7.3.0-py3-none-any.whl.metadata (9.5 kB)
+Collecting langchain-openai>=0.3.11 (from langchain-pinecone->-r requirements.txt (line 6))
+  Using cached langchain_openai-1.1.12-py3-none-any.whl.metadata (3.1 kB)
+Requirement already satisfied: simsimd>=5.9.11 in c:\users\nate\anaconda3\lib\site-packages (from langchain-pinecone->-r requirements.txt (line 6)) (6.5.16)
+Collecting pinecone-plugin-assistant<2.0.0,>=1.6.0 (from pinecone<8.0.0,>=6.0.0->pinecone[asyncio]<8.0.0,>=6.0.0->langchain-pinecone->-r requirements.txt (line 6))
+  Using cached pinecone_plugin_assistant-1.8.0-py3-none-any.whl.metadata (30 kB)
+Collecting aiohttp-retry<3.0.0,>=2.9.1 (from pinecone[asyncio]<8.0.0,>=6.0.0->langchain-pinecone->-r requirements.txt (line 6))
+  Using cached aiohttp_retry-2.9.1-py3-none-any.whl.metadata (8.8 kB)
+Collecting transformers<6.0.0,>=4.41.0 (from sentence-transformers->-r requirements.txt (line 9))
+  Using cached transformers-5.4.0-py3-none-any.whl.metadata (32 kB)
+Collecting huggingface-hub>=0.20.0 (from sentence-transformers->-r requirements.txt (line 9))
+  Using cached huggingface_hub-1.8.0-py3-none-any.whl.metadata (13 kB)
+Collecting torch>=1.11.0 (from sentence-transformers->-r requirements.txt (line 9))
+  Using cached torch-2.11.0-cp313-cp313-win_amd64.whl.metadata (29 kB)
+Requirement already satisfied: scikit-learn in c:\users\nate\anaconda3\lib\site-packages (from sentence-transformers->-r requirements.txt (line 9)) (1.6.1)
+Requirement already satisfied: scipy in c:\users\nate\anaconda3\lib\site-packages (from sentence-transformers->-r requirements.txt (line 9)) (1.16.0)
+Requirement already satisfied: tqdm in c:\users\nate\anaconda3\lib\site-packages (from sentence-transformers->-r requirements.txt (line 9)) (4.67.1)
+Collecting regex>=2025.10.22 (from transformers<6.0.0,>=4.41.0->sentence-transformers->-r requirements.txt (line 9))
+  Using cached regex-2026.3.32-cp313-cp313-win_amd64.whl.metadata (41 kB)
+Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers<6.0.0,>=4.41.0->sentence-transformers->-r requirements.txt (line 9))
+  Using cached tokenizers-0.22.2-cp39-abi3-win_amd64.whl.metadata (7.4 kB)
+Requirement already satisfied: typer in c:\users\nate\anaconda3\lib\site-packages (from transformers<6.0.0,>=4.41.0->sentence-transformers->-r requirements.txt (line 9)) (0.9.0)
+Collecting safetensors>=0.4.3 (from transformers<6.0.0,>=4.41.0->sentence-transformers->-r requirements.txt (line 9))
+  Using cached safetensors-0.7.0-cp38-abi3-win_amd64.whl.metadata (4.2 kB)
+Requirement already satisfied: filelock>=3.10.0 in c:\users\nate\anaconda3\lib\site-packages (from huggingface-hub>=0.20.0->sentence-transformers->-r requirements.txt (line 9)) (3.17.0)
+Requirement already satisfied: fsspec>=2023.5.0 in c:\users\nate\anaconda3\lib\site-packages (from huggingface-hub>=0.20.0->sentence-transformers->-r requirements.txt (line 9)) (2025.3.2)
+Collecting hf-xet<2.0.0,>=1.4.2 (from huggingface-hub>=0.20.0->sentence-transformers->-r requirements.txt (line 9))
+  Using cached hf_xet-1.4.2-cp37-abi3-win_amd64.whl.metadata (4.9 kB)
+Collecting starlette>=0.46.0 (from fastapi->-r requirements.txt (line 11))
+  Using cached starlette-1.0.0-py3-none-any.whl.metadata (6.3 kB)
+Collecting typing-inspection>=0.4.0 (from pydantic<3.0.0,>=2.7.4->langchain->-r requirements.txt (line 1))
+  Using cached typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+Collecting annotated-doc>=0.0.2 (from fastapi->-r requirements.txt (line 11))
+  Using cached annotated_doc-0.0.4-py3-none-any.whl.metadata (6.6 kB)
+Requirement already satisfied: click>=7.0 in c:\users\nate\anaconda3\lib\site-packages (from uvicorn->-r requirements.txt (line 12)) (8.1.8)
+Requirement already satisfied: cffi>=1.12 in c:\users\nate\anaconda3\lib\site-packages (from cryptography>=38.0.3->google-auth<3.0.0,>=2.48.1->google-auth[requests]<3.0.0,>=2.48.1->google-genai<2.0.0,>=1.56.0->langchain-google-genai->-r requirements.txt (line 4)) (1.17.1)
+Requirement already satisfied: pycparser in c:\users\nate\anaconda3\lib\site-packages (from cffi>=1.12->cryptography>=38.0.3->google-auth<3.0.0,>=2.48.1->google-auth[requests]<3.0.0,>=2.48.1->google-genai<2.0.0,>=1.56.0->langchain-google-genai->-r requirements.txt (line 4)) (2.21)
+Collecting openai<3.0.0,>=2.26.0 (from langchain-openai>=0.3.11->langchain-pinecone->-r requirements.txt (line 6))
+  Using cached openai-2.30.0-py3-none-any.whl.metadata (29 kB)
+Collecting tiktoken<1.0.0,>=0.7.0 (from langchain-openai>=0.3.11->langchain-pinecone->-r requirements.txt (line 6))
+  Using cached tiktoken-0.12.0-cp313-cp313-win_amd64.whl.metadata (6.9 kB)
+Collecting jiter<1,>=0.10.0 (from openai<3.0.0,>=2.26.0->langchain-openai>=0.3.11->langchain-pinecone->-r requirements.txt (line 6))
+  Using cached jiter-0.13.0-cp313-cp313-win_amd64.whl.metadata (5.3 kB)
+Requirement already satisfied: pyasn1<0.7.0,>=0.6.1 in c:\users\nate\anaconda3\lib\site-packages (from pyasn1-modules>=0.2.1->google-auth<3.0.0,>=2.48.1->google-auth[requests]<3.0.0,>=2.48.1->google-genai<2.0.0,>=1.56.0->langchain-google-genai->-r requirements.txt (line 4)) (0.6.1)
+Requirement already satisfied: six>=1.5 in c:\users\nate\anaconda3\lib\site-packages (from python-dateutil>=2.5.3->pinecone-client->-r requirements.txt (line 5)) (1.17.0)
+Requirement already satisfied: setuptools<82 in c:\users\nate\anaconda3\lib\site-packages (from torch>=1.11.0->sentence-transformers->-r requirements.txt (line 9)) (72.1.0)
+Requirement already satisfied: sympy>=1.13.3 in c:\users\nate\anaconda3\lib\site-packages (from torch>=1.11.0->sentence-transformers->-r requirements.txt (line 9)) (1.13.3)
+Requirement already satisfied: networkx>=2.5.1 in c:\users\nate\anaconda3\lib\site-packages (from torch>=1.11.0->sentence-transformers->-r requirements.txt (line 9)) (3.4.2)
+Requirement already satisfied: jinja2 in c:\users\nate\anaconda3\lib\site-packages (from torch>=1.11.0->sentence-transformers->-r requirements.txt (line 9)) (3.1.6)
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in c:\users\nate\anaconda3\lib\site-packages (from sympy>=1.13.3->torch>=1.11.0->sentence-transformers->-r requirements.txt (line 9)) (1.3.0)
+Requirement already satisfied: colorama in c:\users\nate\anaconda3\lib\site-packages (from tqdm->sentence-transformers->-r requirements.txt (line 9)) (0.4.6)
+Requirement already satisfied: MarkupSafe>=2.0 in c:\users\nate\anaconda3\lib\site-packages (from jinja2->torch>=1.11.0->sentence-transformers->-r requirements.txt (line 9)) (3.0.2)
+Requirement already satisfied: joblib>=1.2.0 in c:\users\nate\anaconda3\lib\site-packages (from scikit-learn->sentence-transformers->-r requirements.txt (line 9)) (1.4.2)
+Requirement already satisfied: threadpoolctl>=3.1.0 in c:\users\nate\anaconda3\lib\site-packages (from scikit-learn->sentence-transformers->-r requirements.txt (line 9)) (3.5.0)
+Using cached langchain-1.2.13-py3-none-any.whl (112 kB)
+Using cached langchain_core-1.2.23-py3-none-any.whl (506 kB)
+Using cached langgraph-1.1.3-py3-none-any.whl (168 kB)
+Using cached langgraph_checkpoint-4.0.1-py3-none-any.whl (50 kB)
+Using cached langgraph_prebuilt-1.0.8-py3-none-any.whl (35 kB)
+Using cached langgraph_sdk-0.3.12-py3-none-any.whl (95 kB)
+Using cached langsmith-0.7.22-py3-none-any.whl (359 kB)
+Using cached langchain_community-0.4.1-py3-none-any.whl (2.5 MB)
+Using cached dataclasses_json-0.6.7-py3-none-any.whl (28 kB)
+Using cached httpx_sse-0.4.3-py3-none-any.whl (9.0 kB)
+Using cached langchain_classic-1.0.3-py3-none-any.whl (1.0 MB)
+Using cached langchain_text_splitters-1.1.1-py3-none-any.whl (35 kB)
+Using cached marshmallow-3.26.2-py3-none-any.whl (50 kB)
+Using cached pydantic_settings-2.13.1-py3-none-any.whl (58 kB)
+Using cached requests-2.33.0-py3-none-any.whl (65 kB)
+Using cached typing_inspect-0.9.0-py3-none-any.whl (8.8 kB)
+Using cached langchain_google_genai-4.2.1-py3-none-any.whl (66 kB)
+Using cached google_genai-1.69.0-py3-none-any.whl (760 kB)
+Using cached anyio-4.13.0-py3-none-any.whl (114 kB)
+Using cached google_auth-2.49.1-py3-none-any.whl (240 kB)
+Using cached typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+Using cached pinecone_client-6.0.0-py3-none-any.whl (6.7 kB)
+Using cached pinecone_plugin_interface-0.0.7-py3-none-any.whl (6.2 kB)
+Using cached langchain_pinecone-0.2.13-py3-none-any.whl (26 kB)
+Using cached pinecone-7.3.0-py3-none-any.whl (587 kB)
+Using cached pinecone_plugin_assistant-1.8.0-py3-none-any.whl (259 kB)
+Using cached aiohttp_retry-2.9.1-py3-none-any.whl (10.0 kB)
+Using cached pypdf-6.9.2-py3-none-any.whl (333 kB)
+Using cached sentence_transformers-5.3.0-py3-none-any.whl (512 kB)
+Using cached transformers-5.4.0-py3-none-any.whl (10.1 MB)
+Using cached huggingface_hub-1.8.0-py3-none-any.whl (625 kB)
+Using cached hf_xet-1.4.2-cp37-abi3-win_amd64.whl (3.7 MB)
+Using cached tokenizers-0.22.2-cp39-abi3-win_amd64.whl (2.7 MB)
+Using cached fastapi-0.135.2-py3-none-any.whl (117 kB)
+Using cached langchain_experimental-0.4.1-py3-none-any.whl (210 kB)
+Using cached langchain_huggingface-1.2.1-py3-none-any.whl (30 kB)
+Using cached aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+Using cached annotated_doc-0.0.4-py3-none-any.whl (5.3 kB)
+Using cached langchain_openai-1.1.12-py3-none-any.whl (88 kB)
+Using cached openai-2.30.0-py3-none-any.whl (1.1 MB)
+Using cached jiter-0.13.0-cp313-cp313-win_amd64.whl (202 kB)
+Using cached tiktoken-0.12.0-cp313-cp313-win_amd64.whl (879 kB)
+Using cached orjson-3.11.7-cp313-cp313-win_amd64.whl (124 kB)
+Using cached ormsgpack-1.12.2-cp313-cp313-win_amd64.whl (117 kB)
+Using cached regex-2026.3.32-cp313-cp313-win_amd64.whl (277 kB)
+Using cached safetensors-0.7.0-cp38-abi3-win_amd64.whl (341 kB)
+Using cached starlette-1.0.0-py3-none-any.whl (72 kB)
+Using cached torch-2.11.0-cp313-cp313-win_amd64.whl (114.6 MB)
+Using cached typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+pip : ERROR: Error while 
+checking for conflicts. 
+Please file an issue on 
+pip's issue tracker: https
+://github.com/pypa/pip/iss
+ues/new
+At line:1 char:1
++ pip install -r 
+requirements.txt 2>&1 | 
+Out-File -Encoding utf8 
+pip_er ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (E  
+  RROR: Error wh.../pip   
+ /issues/new:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+Traceback (most recent 
+call last):
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_internal\commands\insta
+ll.py", line 587, in 
+_determine_conflicts
+    return check_install_c
+onflicts(to_install)
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_internal\operations\che
+ck.py", line 116, in 
+check_install_conflicts
+    package_set, _ = creat
+e_package_set_from_install
+ed()
+                     ~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~^^
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_internal\operations\che
+ck.py", line 58, in create
+_package_set_from_installe
+d
+    package_set[name] = Pa
+ckageDetails(dist.version,
+ dependencies)
+                          
+             ^^^^^^^^^^^^
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_internal\metadata\impor
+tlib\_dists.py", line 
+175, in version
+    return parse_version(s
+elf._dist.version)
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_vendor\packaging\versio
+n.py", line 56, in parse
+    return 
+Version(version)
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_vendor\packaging\versio
+n.py", line 200, in 
+__init__
+    match = self._regex.se
+arch(version)
+TypeError: expected 
+string or bytes-like 
+object, got 'NoneType'
+Installing collected packages: typing-extensions, safetensors, requests, regex, pypdf, pinecone-plugin-interface, ormsgpack, orjson, marshmallow, jiter, httpx-sse, hf-xet, anyio, annotated-doc, aiohappyeyeballs, typing-inspection, typing-inspect, torch, tiktoken, starlette, pinecone-plugin-assistant, pinecone-client, pinecone, langgraph-sdk, huggingface-hub, google-auth, dataclasses-json, aiohttp-retry, tokenizers, pydantic-settings, openai, langsmith, fastapi, transformers, langchain-core, google-genai, sentence-transformers, langgraph-checkpoint, langchain-text-splitters, langchain-openai, langchain-huggingface, langchain-google-genai, langgraph-prebuilt, langchain-pinecone, langchain-classic, langgraph, langchain-community, langchain-experimental, langchain
+  Attempting uninstall: typing-extensions
+    Found existing installation: typing-extensions None
+error: 
+uninstall-no-record-file
+
+Cannot uninstall 
+typing-extensions None
+
+The package's contents 
+are unknown: no RECORD 
+file was found for 
+typing-extensions.
+
+hint: You might be able 
+to recover from this via: 
+pip install 
+--force-reinstall 
+--no-deps 
+typing-extensions==4.12.2
+

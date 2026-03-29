@@ -1,0 +1,162 @@
+﻿Collecting langchain-community
+  Using cached langchain_community-0.4.1-py3-none-any.whl.metadata (3.0 kB)
+Collecting langchain-core<2.0.0,>=1.0.1 (from langchain-community)
+  Using cached langchain_core-1.2.23-py3-none-any.whl.metadata (4.4 kB)
+Collecting langchain-classic<2.0.0,>=1.0.0 (from langchain-community)
+  Using cached langchain_classic-1.0.3-py3-none-any.whl.metadata (4.8 kB)
+Requirement already satisfied: SQLAlchemy<3.0.0,>=1.4.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-community) (2.0.41)
+Requirement already satisfied: requests<3.0.0,>=2.32.5 in c:\users\nate\anaconda3\lib\site-packages (from langchain-community) (2.33.0)
+Requirement already satisfied: PyYAML<7.0.0,>=5.3.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-community) (6.0.2)
+Requirement already satisfied: aiohttp<4.0.0,>=3.8.3 in c:\users\nate\anaconda3\lib\site-packages (from langchain-community) (3.12.15)
+Requirement already satisfied: tenacity!=8.4.0,<10.0.0,>=8.1.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-community) (9.0.0)
+Collecting dataclasses-json<0.7.0,>=0.6.7 (from langchain-community)
+  Using cached dataclasses_json-0.6.7-py3-none-any.whl.metadata (25 kB)
+Collecting pydantic-settings<3.0.0,>=2.10.1 (from langchain-community)
+  Using cached pydantic_settings-2.13.1-py3-none-any.whl.metadata (3.4 kB)
+Collecting langsmith<1.0.0,>=0.1.125 (from langchain-community)
+  Using cached langsmith-0.7.22-py3-none-any.whl.metadata (15 kB)
+Requirement already satisfied: httpx-sse<1.0.0,>=0.4.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-community) (0.4.3)
+Requirement already satisfied: numpy>=2.1.0 in c:\users\nate\appdata\roaming\python\python313\site-packages (from langchain-community) (2.2.1)
+Collecting aiohappyeyeballs>=2.5.0 (from aiohttp<4.0.0,>=3.8.3->langchain-community)
+  Using cached aiohappyeyeballs-2.6.1-py3-none-any.whl.metadata (5.9 kB)
+Requirement already satisfied: aiosignal>=1.4.0 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (1.4.0)
+Requirement already satisfied: attrs>=17.3.0 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (24.3.0)
+Requirement already satisfied: frozenlist>=1.1.1 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (1.5.0)
+Requirement already satisfied: multidict<7.0,>=4.5 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (6.1.0)
+Requirement already satisfied: propcache>=0.2.0 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (0.3.1)
+Requirement already satisfied: yarl<2.0,>=1.17.0 in c:\users\nate\anaconda3\lib\site-packages (from aiohttp<4.0.0,>=3.8.3->langchain-community) (1.18.0)
+Requirement already satisfied: marshmallow<4.0.0,>=3.18.0 in c:\users\nate\anaconda3\lib\site-packages (from dataclasses-json<0.7.0,>=0.6.7->langchain-community) (3.26.2)
+Collecting typing-inspect<1,>=0.4.0 (from dataclasses-json<0.7.0,>=0.6.7->langchain-community)
+  Using cached typing_inspect-0.9.0-py3-none-any.whl.metadata (1.5 kB)
+Collecting langchain-text-splitters<2.0.0,>=1.1.1 (from langchain-classic<2.0.0,>=1.0.0->langchain-community)
+  Using cached langchain_text_splitters-1.1.1-py3-none-any.whl.metadata (3.3 kB)
+Requirement already satisfied: pydantic<3.0.0,>=2.7.4 in c:\users\nate\anaconda3\lib\site-packages (from langchain-classic<2.0.0,>=1.0.0->langchain-community) (2.11.7)
+Requirement already satisfied: jsonpatch<2.0.0,>=1.33.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core<2.0.0,>=1.0.1->langchain-community) (1.33)
+Requirement already satisfied: packaging>=23.2.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core<2.0.0,>=1.0.1->langchain-community) (24.2)
+Requirement already satisfied: typing-extensions<5.0.0,>=4.7.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core<2.0.0,>=1.0.1->langchain-community) (4.15.0)
+Requirement already satisfied: uuid-utils<1.0,>=0.12.0 in c:\users\nate\anaconda3\lib\site-packages (from langchain-core<2.0.0,>=1.0.1->langchain-community) (0.14.1)
+Requirement already satisfied: jsonpointer>=1.9 in c:\users\nate\anaconda3\lib\site-packages (from jsonpatch<2.0.0,>=1.33.0->langchain-core<2.0.0,>=1.0.1->langchain-community) (3.0.0)
+Requirement already satisfied: httpx<1,>=0.23.0 in c:\users\nate\anaconda3\lib\site-packages (from langsmith<1.0.0,>=0.1.125->langchain-community) (0.28.1)
+Requirement already satisfied: orjson>=3.9.14 in c:\users\nate\anaconda3\lib\site-packages (from langsmith<1.0.0,>=0.1.125->langchain-community) (3.11.7)
+Requirement already satisfied: requests-toolbelt>=1.0.0 in c:\users\nate\anaconda3\lib\site-packages (from langsmith<1.0.0,>=0.1.125->langchain-community) (1.0.0)
+Requirement already satisfied: xxhash>=3.0.0 in c:\users\nate\anaconda3\lib\site-packages (from langsmith<1.0.0,>=0.1.125->langchain-community) (3.6.0)
+Requirement already satisfied: zstandard>=0.23.0 in c:\users\nate\anaconda3\lib\site-packages (from langsmith<1.0.0,>=0.1.125->langchain-community) (0.23.0)
+Requirement already satisfied: anyio in c:\users\nate\anaconda3\lib\site-packages (from httpx<1,>=0.23.0->langsmith<1.0.0,>=0.1.125->langchain-community) (4.13.0)
+Requirement already satisfied: certifi in c:\users\nate\anaconda3\lib\site-packages (from httpx<1,>=0.23.0->langsmith<1.0.0,>=0.1.125->langchain-community) (2025.8.3)
+Requirement already satisfied: httpcore==1.* in c:\users\nate\anaconda3\lib\site-packages (from httpx<1,>=0.23.0->langsmith<1.0.0,>=0.1.125->langchain-community) (1.0.9)
+Requirement already satisfied: idna in c:\users\nate\anaconda3\lib\site-packages (from httpx<1,>=0.23.0->langsmith<1.0.0,>=0.1.125->langchain-community) (3.7)
+Requirement already satisfied: h11>=0.16 in c:\users\nate\anaconda3\lib\site-packages (from httpcore==1.*->httpx<1,>=0.23.0->langsmith<1.0.0,>=0.1.125->langchain-community) (0.16.0)
+Requirement already satisfied: annotated-types>=0.6.0 in c:\users\nate\anaconda3\lib\site-packages (from pydantic<3.0.0,>=2.7.4->langchain-classic<2.0.0,>=1.0.0->langchain-community) (0.6.0)
+Requirement already satisfied: pydantic-core==2.33.2 in c:\users\nate\anaconda3\lib\site-packages (from pydantic<3.0.0,>=2.7.4->langchain-classic<2.0.0,>=1.0.0->langchain-community) (2.33.2)
+Requirement already satisfied: typing-inspection>=0.4.0 in c:\users\nate\anaconda3\lib\site-packages (from pydantic<3.0.0,>=2.7.4->langchain-classic<2.0.0,>=1.0.0->langchain-community) (0.4.0)
+Requirement already satisfied: python-dotenv>=0.21.0 in c:\users\nate\anaconda3\lib\site-packages (from pydantic-settings<3.0.0,>=2.10.1->langchain-community) (1.1.0)
+Requirement already satisfied: charset_normalizer<4,>=2 in c:\users\nate\anaconda3\lib\site-packages (from requests<3.0.0,>=2.32.5->langchain-community) (3.3.2)
+Requirement already satisfied: urllib3<3,>=1.26 in c:\users\nate\anaconda3\lib\site-packages (from requests<3.0.0,>=2.32.5->langchain-community) (2.5.0)
+Requirement already satisfied: greenlet>=1 in c:\users\nate\anaconda3\lib\site-packages (from SQLAlchemy<3.0.0,>=1.4.0->langchain-community) (3.1.1)
+Requirement already satisfied: mypy-extensions>=0.3.0 in c:\users\nate\anaconda3\lib\site-packages (from typing-inspect<1,>=0.4.0->dataclasses-json<0.7.0,>=0.6.7->langchain-community) (1.0.0)
+Using cached langchain_community-0.4.1-py3-none-any.whl (2.5 MB)
+Using cached dataclasses_json-0.6.7-py3-none-any.whl (28 kB)
+Using cached langchain_classic-1.0.3-py3-none-any.whl (1.0 MB)
+Using cached langchain_core-1.2.23-py3-none-any.whl (506 kB)
+Using cached langchain_text_splitters-1.1.1-py3-none-any.whl (35 kB)
+Using cached langsmith-0.7.22-py3-none-any.whl (359 kB)
+Using cached pydantic_settings-2.13.1-py3-none-any.whl (58 kB)
+Using cached typing_inspect-0.9.0-py3-none-any.whl (8.8 kB)
+Using cached aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+pip : ERROR: Error while 
+checking for conflicts. 
+Please file an issue on 
+pip's issue tracker: https
+://github.com/pypa/pip/iss
+ues/new
+At line:1 char:1
++ pip install 
+langchain-community 2>&1 
+| Out-File -Encoding utf8 
+instal ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (E  
+  RROR: Error wh.../pip   
+ /issues/new:String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+Traceback (most recent 
+call last):
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_internal\commands\insta
+ll.py", line 587, in 
+_determine_conflicts
+    return check_install_c
+onflicts(to_install)
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_internal\operations\che
+ck.py", line 116, in 
+check_install_conflicts
+    package_set, _ = creat
+e_package_set_from_install
+ed()
+                     ~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~^^
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_internal\operations\che
+ck.py", line 58, in create
+_package_set_from_installe
+d
+    package_set[name] = Pa
+ckageDetails(dist.version,
+ dependencies)
+                          
+             ^^^^^^^^^^^^
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_internal\metadata\impor
+tlib\_dists.py", line 
+175, in version
+    return parse_version(s
+elf._dist.version)
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_vendor\packaging\versio
+n.py", line 56, in parse
+    return 
+Version(version)
+  File "C:\Users\nate\anac
+onda3\Lib\site-packages\pi
+p\_vendor\packaging\versio
+n.py", line 200, in 
+__init__
+    match = self._regex.se
+arch(version)
+TypeError: expected 
+string or bytes-like 
+object, got 'NoneType'
+Installing collected packages: typing-inspect, aiohappyeyeballs, dataclasses-json, pydantic-settings, langsmith, langchain-core, langchain-text-splitters, langchain-classic, langchain-community
+  Attempting uninstall: aiohappyeyeballs
+    Found existing installation: aiohappyeyeballs None
+error: 
+uninstall-no-record-file
+
+Cannot uninstall 
+aiohappyeyeballs None
+
+The package's contents 
+are unknown: no RECORD 
+file was found for 
+aiohappyeyeballs.
+
+hint: You might be able 
+to recover from this via: 
+pip install 
+--force-reinstall 
+--no-deps 
+aiohappyeyeballs==2.4.4
+

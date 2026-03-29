@@ -1,0 +1,211 @@
+﻿git : error: The 
+following untracked 
+working tree files would 
+be overwritten by reset:
+At line:1 char:1
++ git rebase --abort 2>&1 
+| Out-File -Encoding utf8 
+rebase_abort_log.tx ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (e  
+  rror: The foll...itte   
+ n by reset::String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+	node_modules/@babel/compa
+t-data/README.md
+	node_modules/@babel/compa
+t-data/corejs2-built-ins.j
+s
+	node_modules/@babel/compa
+t-data/corejs3-shipped-pro
+posals.js
+	node_modules/@babel/compa
+t-data/data/corejs2-built-
+ins.json
+	node_modules/@babel/compa
+t-data/data/corejs3-shippe
+d-proposals.json
+	node_modules/@babel/compa
+t-data/data/native-modules
+.json
+	node_modules/@babel/compa
+t-data/data/overlapping-pl
+ugins.json
+	node_modules/@babel/compa
+t-data/data/plugin-bugfixe
+s.json
+	node_modules/@babel/compa
+t-data/data/plugins.json
+	node_modules/@babel/compa
+t-data/native-modules.js
+	node_modules/@babel/compa
+t-data/overlapping-plugins
+.js
+	node_modules/@babel/compa
+t-data/package.json
+	node_modules/@babel/compa
+t-data/plugin-bugfixes.js
+	node_modules/@babel/compa
+t-data/plugins.js
+	node_modules/@babel/core/
+LICENSE
+	node_modules/@babel/core/
+README.md
+	node_modules/@babel/core/
+lib/config/cache-contexts.
+js
+	node_modules/@babel/core/
+lib/config/cache-contexts.
+js.map
+	node_modules/@babel/core/
+lib/config/caching.js
+	node_modules/@babel/core/
+lib/config/caching.js.map
+	node_modules/@babel/core/
+lib/config/config-chain.js
+	node_modules/@babel/core/
+lib/config/config-chain.js
+.map
+	node_modules/@babel/core/
+lib/config/config-descript
+ors.js
+	node_modules/@babel/core/
+lib/config/config-descript
+ors.js.map
+	node_modules/@babel/core/
+lib/config/files/configura
+tion.js
+	node_modules/@babel/core/
+lib/config/files/configura
+tion.js.map
+	node_modules/@babel/core/
+lib/config/files/import.cj
+s
+	node_modules/@babel/core/
+lib/config/files/import.cj
+s.map
+	node_modules/@babel/core/
+lib/config/files/index-bro
+wser.js
+	node_modules/@babel/core/
+lib/config/files/index-bro
+wser.js.map
+	node_modules/@babel/core/
+lib/config/files/index.js
+	node_modules/@babel/core/
+lib/config/files/index.js.
+map
+	node_modules/@babel/core/
+lib/config/files/module-ty
+pes.js
+	node_modules/@babel/core/
+lib/config/files/module-ty
+pes.js.map
+	node_modules/@babel/core/
+lib/config/files/package.j
+s
+	node_modules/@babel/core/
+lib/config/files/package.j
+s.map
+	node_modules/@babel/core/
+lib/config/files/plugins.j
+s
+	node_modules/@babel/core/
+lib/config/files/plugins.j
+s.map
+	node_modules/@babel/core/
+lib/config/files/types.js
+	node_modules/@babel/core/
+lib/config/files/types.js.
+map
+	node_modules/@babel/core/
+lib/config/files/utils.js
+	node_modules/@babel/core/
+lib/config/files/utils.js.
+map
+	node_modules/@babel/core/
+lib/config/full.js
+	node_modules/@babel/core/
+lib/config/full.js.map
+	node_modules/@babel/core/
+lib/config/helpers/config-
+api.js
+	node_modules/@babel/core/
+lib/config/helpers/config-
+api.js.map
+	node_modules/@babel/core/
+lib/config/helpers/deep-ar
+ray.js
+	node_modules/@babel/core/
+lib/config/helpers/deep-ar
+ray.js.map
+	node_modules/@babel/core/
+lib/config/helpers/environ
+ment.js
+	node_modules/@babel/core/
+lib/config/helpers/environ
+ment.js.map
+	node_modules/@babel/core/
+lib/config/index.js
+	node_modules/@babel/core/
+lib/config/index.js.map
+	node_modules/@babel/core/
+lib/config/item.js
+	node_modules/@babel/core/
+lib/config/item.js.map
+	node_modules/@babel/core/
+lib/config/partial.js
+	node_modules/@babel/core/
+lib/config/partial.js.map
+	node_modules/@babel/core/
+lib/config/pattern-to-rege
+x.js
+	node_modules/@babel/core/
+lib/config/pattern-to-rege
+x.js.map
+	node_modules/@babel/core/
+lib/config/plugin.js
+	node_modules/@babel/core/
+lib/config/plugin.js.map
+	node_modules/@babel/core/
+lib/config/printer.js
+	node_modules/@babel/core/
+lib/config/printer.js.map
+	node_modules/@babel/core/
+lib/config/resolve-targets
+-browser.js
+	node_modules/@babel/core/
+lib/config/resolve-targets
+-browser.js.map
+	node_modules/@babel/core/
+lib/config/resolve-targets
+.js
+	node_modules/@babel/core/
+lib/config/resolve-targets
+.js.map
+	node_modules/@babel/core/
+lib/config/util.js
+	node_modules/@babel/core/
+lib/config/util.js.map
+	node_modules/@babel/core/
+lib/config/validation/opti
+on-assertions.js
+	node_modules/@babel/core/
+lib/config/validation/opti
+on-assertions.js.map
+	node_modules/@babel/core/
+lib/config/validation/opti
+ons.js
+	node_modules/@babel/core/
+lib/config/validation/opti
+ons.js.map
+	node_modules/@babel/core
+Aborting
+fatal: could not move 
+back to 2abbddd88c89f2b615
+1b67290359dcbb9303e6b4

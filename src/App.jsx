@@ -51,19 +51,25 @@ function AppRoutes() {
         <Route path="/" element={<Navigate to="/messaging" replace />} />
 
         {/* Authenticated routes */}
+        {/* Tier 4: Inter-Agent Messaging Logs & Status Hub */}
         <Route
           path="/messaging"
           element={<AuthRoute><Layout><MessagingPage /></Layout></AuthRoute>}
         />
+        
+        {/* Tier 1: Private User Data Configuration */}
         <Route
           path="/profile"
           element={<AuthRoute><Layout><ProfilePage /></Layout></AuthRoute>}
         />
+        
+        {/* Tier 3: Core Intelligence Settings / Proxy Behavior Configuration */}
         <Route
           path="/bot-settings"
           element={<AuthRoute><Layout><BotSettingsPage /></Layout></AuthRoute>}
         />
 
+        {/* Tier 2: Global Org Data Interface (RAG) */}
         <Route
           path="/org"
           element={<AuthRoute><Layout><OrgPage /></Layout></AuthRoute>}
