@@ -32,3 +32,5 @@ temp_uploads/
 .DS_Store
 .vscode/
 *.swp
+scripts/
+*.mjs
