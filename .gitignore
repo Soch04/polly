@@ -1,4 +1,34 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+
+# Production build
+dist/
+
+# Environment variables — never commit secrets
 .env
+.env.local
+.env.*.local
+
+# Python artifacts (development tooling only)
+__pycache__/
+*.py[cod]
+*.pyo
+requirements.txt
+*.py
+
+# Debug and log files
+*.log
+*.txt
+rebase_abort_log.txt
+typing_ext.txt
+
+# Temporary upload staging directory
+temp_uploads/
+
+# Firebase local cache
+.firebase/
+
+# Editor and OS artifacts
 .DS_Store
+.vscode/
+*.swp
