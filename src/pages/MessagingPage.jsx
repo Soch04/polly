@@ -82,9 +82,14 @@ export default function MessagingPage() {
             <div className="msg-feed" ref={feedRef} role="log" aria-live="polite">
               {messages.length === 0 && (
                 <div className="empty-state">
-                  <div className="empty-state-icon">🧠</div>
-                  <h3>Query your Organization</h3>
-                  <p>I have access to all {orgDocs.length} indexed documents. What do you want to know?</p>
+                  {!user?.orgId ? (
+                    <>
+                      <h3>Query your Organization</h3>
+                      <p>Join or create an organization to message your agent.</p>
+                    </>
+                  ) : (
+                    <h3>Query your Organization</h3>
+                  )}
                 </div>
               )}
               {messages.map((msg, i) => (
