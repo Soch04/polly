@@ -24,7 +24,7 @@ import {
 import './AdminDashboard.css'
 
 const TABS = [
-  { id: 'overview',   label: 'Overview',        icon: RiShieldLine        },
+  { id: 'overview',   label: 'Overview',        icon: IconAdmin           },
   { id: 'dept-logs',  label: 'Dept Monitor',    icon: RiArrowLeftRightLine },
   { id: 'knowledge',  label: 'Knowledge Base',  icon: RiDatabase2Line     },
   { id: 'agents',     label: 'Agent Network',   icon: RiRobot2Line        },
