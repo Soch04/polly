@@ -83,6 +83,20 @@
   word-break: break-word;
 }
 
+/* Streaming cursor — blinks while Gemini tokens are arriving */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.streaming-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  animation: blink-cursor 0.6s step-end infinite;
+  color: var(--color-accent, #4a9fff);
+  font-size: 0.85em;
+  vertical-align: baseline;
+}
+
 /* ── Bot-to-Bot Log ── */
 .msg-bot-to-bot {
   background: var(--color-surface-2);

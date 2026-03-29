@@ -10,7 +10,7 @@ import './MessageBubble.css'
  * type: 'user' | 'bot-response' | 'bot-to-bot'
  */
 export default function MessageBubble({ message, onHighlightDoc }) {
-  const { type, senderName, recipientName, content, timestamp, metadata, citations } = message
+  const { type, senderName, recipientName, content, timestamp, metadata, citations, streaming } = message
   const { user, agent } = useAuth()
   
   const [isReplyingManually, setIsReplyingManually] = useState(false)
@@ -95,9 +95,10 @@ export default function MessageBubble({ message, onHighlightDoc }) {
           <span className="msg-timestamp">{timeStr}</span>
         </div>
 
-        {/* Content — support markdown-like bold */}
+        {/* Content — supports markdown-like bold; shows blinking cursor during streaming */}
         <div className="msg-content">
           {formatContent(content)}
+          {streaming && <span className="streaming-cursor" aria-hidden="true">▊</span>}
         </div>
 
         {/* Interactive Notification Actions */}
