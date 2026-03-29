@@ -174,13 +174,14 @@ Activates pre-seeded mock data — full UI works without credentials.
 | Chunk size | 1,000 chars, 200-char overlap |
 | Pinecone top-K | 5 per query |
 | Pinecone isolation | Namespace per `orgId` |
-| Lines of application code | ~8,500+ |
+| Lines of application code | 9,589 (JS/JSX/CSS, measured) |
 | Git branches | `main`, `organization`, `theme`, `touch-ups`, `query-org` |
 
 ---
 
 ## Team
 
-**Sonya Cheteyan** — Full-Stack Lead: Firebase integration, React architecture, Admin Dashboard, multi-tenant org system, RBAC, Microsoft Fluent/Metro design system, dark mode, push layout.
+**Repository**: [github.com/Soch04/borg](https://github.com/Soch04/borg)  
+**Live Demo**: [https://polly-970c1.web.app](https://polly-970c1.web.app)
 
 **Nathan Fowler** — AI/Agent Systems Lead: RAG pipeline (`lib/rag.js`), Gemini integration, `buildPrompt.js` (system prompt, escalation parsing, internal monologue), `generateReply.js`.
