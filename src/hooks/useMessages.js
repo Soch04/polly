@@ -49,6 +49,7 @@ import { queryKnowledgeBase } from '../lib/rag'
 import { classifyQuery } from '../agent/queryClassifier'
 import { rerankResults } from '../lib/ragReranker'
 import { generateHypotheticalDoc, isHyDEBeneficial } from '../lib/hyde'
+import { shouldSummarize, summarizeHistory } from '../lib/conversationMemory'
 
 export function useMessages() {
   const { user, agent } = useAuth()
@@ -158,12 +159,19 @@ export function useMessages() {
     }
 
     try {
-      // ── Step 4: Build system prompt + call Gemini ──────────────────────────
+      // ── Step 4: Build system prompt + call Gemini ────────────────────
       const systemPrompt = buildSystemPrompt(user, agent, kbContext, directory)
       const complex      = isComplexRequest(content)
       const fullPrompt   = (complex && ENABLE_INTERNAL_MONOLOGUE)
         ? systemPrompt + '\n\n' + buildMonologuePrompt()
         : systemPrompt
+
+      // Compress history if it has grown past the summarization threshold.
+      // Replaces oldest turns with a structured [KEY DECISIONS]/[REFERENCED DOCUMENTS]/
+      // [CONTEXT] summary to prevent silent context loss in long sessions.
+      const activeHistory = shouldSummarize(historyRef.current)
+        ? await summarizeHistory(historyRef.current)
+        : historyRef.current
 
       let responseText
 
@@ -173,8 +181,8 @@ export function useMessages() {
         responseText = await callGemini({
           systemPrompt: fullPrompt,
           userMessage:  content,
-          history:      historyRef.current,
-          temperature:  intent.temperature,  // intent-tuned temperature
+          history:      activeHistory,
+          temperature:  intent.temperature,
         })
       }
 
